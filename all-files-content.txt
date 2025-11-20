@@ -1,0 +1,579 @@
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/PatientServiceImpl.java =====
+package tn.esprit.docsbackend.services.impl;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
+import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+import tn.esprit.docsbackend.dto.patient.PatientProfileUpdateRequest;
+import tn.esprit.docsbackend.entities.DoctorProfile;
+import tn.esprit.docsbackend.entities.PatientProfile;
+import tn.esprit.docsbackend.entities.User;
+import tn.esprit.docsbackend.entities.enums.Role;
+import tn.esprit.docsbackend.repositories.PatientProfileRepository;
+import tn.esprit.docsbackend.services.PatientService;
+import tn.esprit.docsbackend.utils.SecurityUtils;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class PatientServiceImpl implements PatientService {
+
+    private final PatientProfileRepository patientProfileRepository;
+
+    @Override
+    public PatientProfileDto getCurrentPatientProfile() {
+        User currentUser = SecurityUtils.getCurrentUserOrThrow();
+
+        if (currentUser.getRole() != Role.PATIENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only patients can access this resource");
+        }
+
+        PatientProfile profile = patientProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
+
+        return mapToDto(profile);
+    }
+
+    /**
+     * Update the profile of the currently authenticated patient (partial update).
+     */
+    public PatientProfileDto updateCurrentPatientProfile(PatientProfileUpdateRequest request) {
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.PATIENT);
+
+        PatientProfile profile = patientProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
+
+        if (request.getDateOfBirth() != null) {
+            profile.setDateOfBirth(request.getDateOfBirth());
+        }
+        if (request.getGender() != null) {
+            profile.setGender(request.getGender());
+        }
+        if (request.getBloodType() != null) {
+            profile.setBloodType(request.getBloodType());
+        }
+        if (request.getHeightCm() != null) {
+            profile.setHeightCm(request.getHeightCm());
+        }
+        if (request.getWeightKg() != null) {
+            profile.setWeightKg(request.getWeightKg());
+        }
+
+        PatientProfile saved = patientProfileRepository.save(profile);
+        return mapToDto(saved);
+    }
+
+    /**
+     * Returns the list of doctors linked to the currently authenticated patient.
+     */
+    @Transactional(readOnly = true)
+    public List<DoctorProfileDto> getDoctorsOfCurrentPatient() {
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.PATIENT);
+
+        PatientProfile profile = patientProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
+
+        return profile.getDoctors().stream()
+                .map(this::mapDoctorToDto)
+                .collect(Collectors.toList());
+    }
+
+    private PatientProfileDto mapToDto(PatientProfile profile) {
+        if (profile == null || profile.getUser() == null) {
+            return null;
+        }
+
+        User user = profile.getUser();
+
+        return PatientProfileDto.builder()
+                .id(profile.getId())
+                .userId(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .dateOfBirth(profile.getDateOfBirth())
+                .gender(profile.getGender())
+                .bloodType(profile.getBloodType())
+                .heightCm(profile.getHeightCm())
+                .weightKg(profile.getWeightKg())
+                .build();
+    }
+
+    private DoctorProfileDto mapDoctorToDto(DoctorProfile profile) {
+        if (profile == null || profile.getUser() == null) {
+            return null;
+        }
+
+        User user = profile.getUser();
+
+        return DoctorProfileDto.builder()
+                .id(profile.getId())
+                .userId(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .bio(profile.getBio())
+                .yearsOfExperience(profile.getYearsOfExperience())
+                .clinicAddress(profile.getClinicAddress())
+                .consultationFee(profile.getConsultationFee())
+                .build();
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/DoctorServiceImpl.java =====
+package tn.esprit.docsbackend.services.impl;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
+import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
+import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+import tn.esprit.docsbackend.entities.DoctorProfile;
+import tn.esprit.docsbackend.entities.PatientProfile;
+import tn.esprit.docsbackend.entities.User;
+import tn.esprit.docsbackend.entities.enums.Role;
+import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
+import tn.esprit.docsbackend.services.DoctorService;
+import tn.esprit.docsbackend.utils.SecurityUtils;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class DoctorServiceImpl implements DoctorService {
+
+    private final DoctorProfileRepository doctorProfileRepository;
+
+    @Override
+    public DoctorProfileDto getCurrentDoctorProfile() {
+        User currentUser = SecurityUtils.getCurrentUserOrThrow();
+
+        if (currentUser.getRole() != Role.DOCTOR) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only doctors can access this resource");
+        }
+
+        DoctorProfile profile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        return mapToDto(profile);
+    }
+
+    /**
+     * Update the profile of the currently authenticated doctor (partial update).
+     */
+    public DoctorProfileDto updateCurrentDoctorProfile(DoctorProfileUpdateRequest request) {
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+
+        DoctorProfile profile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        if (request.getBio() != null) {
+            profile.setBio(request.getBio());
+        }
+        if (request.getYearsOfExperience() != null) {
+            profile.setYearsOfExperience(request.getYearsOfExperience());
+        }
+        if (request.getClinicAddress() != null) {
+            profile.setClinicAddress(request.getClinicAddress());
+        }
+        if (request.getConsultationFee() != null) {
+            profile.setConsultationFee(request.getConsultationFee());
+        }
+
+        DoctorProfile saved = doctorProfileRepository.save(profile);
+        return mapToDto(saved);
+    }
+
+    /**
+     * Returns the list of patients linked to the currently authenticated doctor.
+     */
+    @Transactional(readOnly = true)
+    public List<PatientProfileDto> getPatientsOfCurrentDoctor() {
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+
+        DoctorProfile profile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        return profile.getPatients().stream()
+                .map(this::mapPatientToDto)
+                .collect(Collectors.toList());
+    }
+
+    private DoctorProfileDto mapToDto(DoctorProfile profile) {
+        if (profile == null || profile.getUser() == null) {
+            return null;
+        }
+
+        User user = profile.getUser();
+
+        return DoctorProfileDto.builder()
+                .id(profile.getId())
+                .userId(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .bio(profile.getBio())
+                .yearsOfExperience(profile.getYearsOfExperience())
+                .clinicAddress(profile.getClinicAddress())
+                .consultationFee(profile.getConsultationFee())
+                .build();
+    }
+
+    private PatientProfileDto mapPatientToDto(PatientProfile profile) {
+        if (profile == null || profile.getUser() == null) {
+            return null;
+        }
+
+        User user = profile.getUser();
+
+        return PatientProfileDto.builder()
+                .id(profile.getId())
+                .userId(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .dateOfBirth(profile.getDateOfBirth())
+                .gender(profile.getGender())
+                .bloodType(profile.getBloodType())
+                .heightCm(profile.getHeightCm())
+                .weightKg(profile.getWeightKg())
+                .build();
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/UserServiceImpl.java =====
+package tn.esprit.docsbackend.services.impl;
+
+import org.springframework.stereotype.Service;
+import tn.esprit.docsbackend.dto.user.UserDto;
+import tn.esprit.docsbackend.entities.User;
+import tn.esprit.docsbackend.services.UserService;
+import tn.esprit.docsbackend.utils.SecurityUtils;
+
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Override
+    public UserDto getCurrentUser() {
+        User user = SecurityUtils.getCurrentUserOrThrow();
+        return mapToDto(user);
+    }
+
+    private UserDto mapToDto(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        return UserDto.builder()
+                .id(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .profileImage(user.getProfileImage())
+                .isFirstLogin(user.getIsFirstLogin())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/AuthServiceImpl.java =====
+package tn.esprit.docsbackend.services.impl;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import tn.esprit.docsbackend.dto.auth.LoginRequest;
+import tn.esprit.docsbackend.dto.auth.RefreshTokenRequest;
+import tn.esprit.docsbackend.dto.auth.SignupRequest;
+import tn.esprit.docsbackend.dto.auth.TokenResponse;
+import tn.esprit.docsbackend.entities.DoctorProfile;
+import tn.esprit.docsbackend.entities.PatientProfile;
+import tn.esprit.docsbackend.entities.RefreshToken;
+import tn.esprit.docsbackend.entities.User;
+import tn.esprit.docsbackend.entities.enums.Role;
+import tn.esprit.docsbackend.entities.enums.UserStatus;
+import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
+import tn.esprit.docsbackend.repositories.PatientProfileRepository;
+import tn.esprit.docsbackend.repositories.RefreshTokenRepository;
+import tn.esprit.docsbackend.repositories.UserRepository;
+import tn.esprit.docsbackend.services.AuthService;
+import tn.esprit.docsbackend.utils.JwtTokenProvider;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+    private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final DoctorProfileRepository doctorProfileRepository;
+    private final PatientProfileRepository patientProfileRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    public TokenResponse signup(SignupRequest request) {
+        if (request.getRole() == Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot sign up as ADMIN");
+        }
+
+        if (userRepository.existsByEmailAndDeletedFalse(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already in use");
+        }
+
+        User user = User.builder()
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole())
+                .status(UserStatus.ACTIVE)
+                .isFirstLogin(true)
+                .build();
+
+        userRepository.save(user);
+
+        // Create associated profile based on role
+        if (request.getRole() == Role.DOCTOR) {
+            DoctorProfile doctorProfile = DoctorProfile.builder()
+                    .user(user)
+                    .build();
+            doctorProfileRepository.save(doctorProfile);
+        } else if (request.getRole() == Role.PATIENT) {
+            PatientProfile patientProfile = PatientProfile.builder()
+                    .user(user)
+                    .build();
+            patientProfileRepository.save(patientProfile);
+        }
+
+        return generateTokensForUser(user);
+    }
+
+    @Override
+    public TokenResponse login(LoginRequest request) {
+        User user = userRepository.findByEmailAndDeletedFalse(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+
+        if (user.getStatus() == UserStatus.BLOCKED || user.getStatus() == UserStatus.INACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is not active");
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+
+        return generateTokensForUser(user);
+    }
+
+    @Override
+    public TokenResponse refresh(RefreshTokenRequest request) {
+        String providedToken = request.getRefreshToken();
+
+        if (!jwtTokenProvider.validateToken(providedToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+
+        String tokenType = jwtTokenProvider.getTokenType(providedToken);
+        if (!"REFRESH".equals(tokenType)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token type");
+        }
+
+        RefreshToken storedToken = refreshTokenRepository
+                .findByTokenAndRevokedFalseAndDeletedFalse(providedToken)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token not found or revoked"));
+
+        if (storedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            storedToken.setRevoked(true);
+            refreshTokenRepository.save(storedToken);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired");
+        }
+
+        User user = storedToken.getUser();
+        if (user == null || Boolean.TRUE.equals(user.isDeleted())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User for this token no longer exists");
+        }
+
+        if (user.getStatus() == UserStatus.BLOCKED || user.getStatus() == UserStatus.INACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is not active");
+        }
+
+        // Rotate refresh token: revoke old, issue new
+        storedToken.setRevoked(true);
+        refreshTokenRepository.save(storedToken);
+
+        return generateTokensForUser(user);
+    }
+
+    private TokenResponse generateTokensForUser(User user) {
+        String accessToken = jwtTokenProvider.generateAccessToken(user);
+        String refreshTokenValue = jwtTokenProvider.generateRefreshToken(user);
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime refreshExpiry = now.plusSeconds(jwtTokenProvider.getRefreshTokenValidityMillis() / 1000);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(refreshTokenValue)
+                .expiresAt(refreshExpiry)
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(refreshToken);
+
+        long expiresInSeconds = jwtTokenProvider.getAccessTokenValidityMillis() / 1000;
+
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshTokenValue)
+                .expiresIn(expiresInSeconds)
+                .build();
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/UserService.java =====
+package tn.esprit.docsbackend.services;
+
+import tn.esprit.docsbackend.dto.user.UserDto;
+
+public interface UserService {
+
+    /**
+     * Returns the currently authenticated user's profile information.
+     */
+    UserDto getCurrentUser();
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/PatientService.java =====
+package tn.esprit.docsbackend.services;
+
+import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+
+public interface PatientService {
+
+    /**
+     * Returns the profile of the currently authenticated patient.
+     */
+    PatientProfileDto getCurrentPatientProfile();
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/DoctorService.java =====
+package tn.esprit.docsbackend.services;
+
+import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
+
+public interface DoctorService {
+
+    /**
+     * Returns the profile of the currently authenticated doctor.
+     */
+    DoctorProfileDto getCurrentDoctorProfile();
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/AuthService.java =====
+package tn.esprit.docsbackend.services;
+
+import tn.esprit.docsbackend.dto.auth.LoginRequest;
+import tn.esprit.docsbackend.dto.auth.RefreshTokenRequest;
+import tn.esprit.docsbackend.dto.auth.SignupRequest;
+import tn.esprit.docsbackend.dto.auth.TokenResponse;
+
+public interface AuthService {
+
+    /**
+     * Register a new user (DOCTOR or PATIENT).
+     */
+    TokenResponse signup(SignupRequest request);
+
+    /**
+     * Authenticate user and return access + refresh tokens.
+     */
+    TokenResponse login(LoginRequest request);
+
+    /**
+     * Use a refresh token to obtain new access (and possibly refresh) tokens.
+     */
+    TokenResponse refresh(RefreshTokenRequest request);
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/services/CustomUserDetailsService.java =====
+package tn.esprit.docsbackend.services;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import tn.esprit.docsbackend.entities.User;
+import tn.esprit.docsbackend.entities.enums.UserStatus;
+import tn.esprit.docsbackend.repositories.UserRepository;
+
+import java.util.Collections;
+
+@Service
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    /**
+     * In this implementation, "username" is the email.
+     */
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        if (user.getStatus() == UserStatus.BLOCKED || user.getStatus() == UserStatus.INACTIVE) {
+            throw new UsernameNotFoundException("User is not active");
+        }
+
+        String roleName = user.getRole() != null ? user.getRole().name() : "PATIENT";
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + roleName)))
+                .accountLocked(user.getStatus() == UserStatus.BLOCKED)
+                .disabled(user.getStatus() == UserStatus.INACTIVE)
+                .build();
+    }
+}
+
+

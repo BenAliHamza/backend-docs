@@ -1,0 +1,77 @@
+[
+  {
+    "code": "GP",
+    "name": "General Practice",
+    "description": "General practitioner / family medicine, first point of contact for most patients."
+  },
+  {
+    "code": "CARDIO",
+    "name": "Cardiology",
+    "description": "Diagnosis and treatment of heart and cardiovascular diseases."
+  },
+  {
+    "code": "DERMA",
+    "name": "Dermatology",
+    "description": "Skin, hair, and nail disorders."
+  },
+  {
+    "code": "OPHTHALMO",
+    "name": "Ophthalmology",
+    "description": "Eye and vision disorders."
+  },
+  {
+    "code": "PED",
+    "name": "Pediatrics",
+    "description": "Medical care of infants, children, and adolescents."
+  },
+  {
+    "code": "NEURO",
+    "name": "Neurology",
+    "description": "Disorders of the brain and nervous system."
+  },
+  {
+    "code": "ORTHO",
+    "name": "Orthopedics",
+    "description": "Musculoskeletal system including bones, joints, ligaments, tendons, and muscles."
+  },
+  {
+    "code": "ORL",
+    "name": "Otolaryngology (ENT)",
+    "description": "Ear, nose, and throat disorders."
+  },
+  {
+    "code": "GASTRO",
+    "name": "Gastroenterology",
+    "description": "Digestive system and its disorders."
+  },
+  {
+    "code": "ENDO",
+    "name": "Endocrinology",
+    "description": "Hormonal and metabolic disorders."
+  },
+  {
+    "code": "GYNECO",
+    "name": "Gynecology & Obstetrics",
+    "description": "Women’s reproductive health and pregnancy."
+  },
+  {
+    "code": "PSY",
+    "name": "Psychiatry",
+    "description": "Mental, emotional, and behavioral disorders."
+  },
+  {
+    "code": "RHEUMA",
+    "name": "Rheumatology",
+    "description": "Joint, soft tissue, autoimmune and inflammatory diseases."
+  },
+  {
+    "code": "PNEUMO",
+    "name": "Pulmonology",
+    "description": "Respiratory system and lung diseases."
+  },
+  {
+    "code": "ONCO",
+    "name": "Oncology",
+    "description": "Diagnosis and treatment of cancer."
+  }
+]

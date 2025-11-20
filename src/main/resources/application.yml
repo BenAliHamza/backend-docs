@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: docsBackEnd
+
+  datasource:
+    url: jdbc:mysql://bauwzgwkcygqucc90w5z-mysql.services.clever-cloud.com:3306/bauwzgwkcygqucc90w5z
+    username: uw8iyzki8gymkwkg
+    password: TVPBwu64aAZbhHTGlyWh
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    hikari:
+      maximum-pool-size: 3   # at most 3 connections from the app
+      minimum-idle: 1
+      idle-timeout: 600000   # 10 minutes (ms)
+      max-lifetime: 1800000  # 30 minutes (ms)
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+image-storage:
+  imgbb:
+    # ?? Don't commit real keys to public VCS.
+    # Put this in env in real production and reference via ${IMGBB_API_KEY}.
+    api-key: "d0c505ab479ec3ead47c13fc426c71c5"
+    api-url: "https://api.imgbb.com/1/upload"

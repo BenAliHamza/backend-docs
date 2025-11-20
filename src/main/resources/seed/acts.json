@@ -1,0 +1,286 @@
+[
+  {
+    "code": "GEN_CONSULT",
+    "name": "General consultation",
+    "description": "Non-emergency consultation for general health concerns.",
+    "basePrice": 70.0,
+    "defaultDurationMinutes": 20,
+    "teleconsultationAvailable": true,
+    "specialties": ["GP", "PED"]
+  },
+  {
+    "code": "FOLLOW_UP",
+    "name": "Follow-up consultation",
+    "description": "Short follow-up visit regarding an existing problem or treatment.",
+    "basePrice": 50.0,
+    "defaultDurationMinutes": 15,
+    "teleconsultationAvailable": true,
+    "specialties": ["GP", "CARDIO", "DERMA", "OPHTHALMO", "PED", "NEURO", "ORTHO", "ORL", "GASTRO", "ENDO", "GYNECO", "PSY", "RHEUMA", "PNEUMO", "ONCO"]
+  },
+  {
+    "code": "PREVENTIVE_CHECKUP",
+    "name": "Preventive check-up",
+    "description": "Full preventive check-up with risk assessment and lifestyle advice.",
+    "basePrice": 90.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["GP"]
+  },
+
+  {
+    "code": "CARDIO_CONSULT",
+    "name": "Cardiology consultation",
+    "description": "Consultation for chest pain, dyspnea, palpitations and cardiovascular risk.",
+    "basePrice": 150.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["CARDIO"]
+  },
+  {
+    "code": "ECG",
+    "name": "Electrocardiogram (ECG)",
+    "description": "Resting 12-lead electrocardiogram and interpretation.",
+    "basePrice": 80.0,
+    "defaultDurationMinutes": 20,
+    "teleconsultationAvailable": false,
+    "specialties": ["CARDIO"]
+  },
+  {
+    "code": "ECHO_CARDIO",
+    "name": "Cardiac ultrasound (echocardiography)",
+    "description": "Non-invasive ultrasound examination of the heart.",
+    "basePrice": 220.0,
+    "defaultDurationMinutes": 40,
+    "teleconsultationAvailable": false,
+    "specialties": ["CARDIO"]
+  },
+
+  {
+    "code": "DERMA_CONSULT",
+    "name": "Dermatology consultation",
+    "description": "Assessment and management of skin, hair, and nail conditions.",
+    "basePrice": 130.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["DERMA"]
+  },
+  {
+    "code": "ACNE_MANAGEMENT",
+    "name": "Acne management visit",
+    "description": "Evaluation and treatment plan for acne and related scarring.",
+    "basePrice": 110.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["DERMA"]
+  },
+  {
+    "code": "MOLE_CHECK",
+    "name": "Skin lesion / mole check",
+    "description": "Screening and evaluation of suspicious skin lesions and moles.",
+    "basePrice": 140.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": false,
+    "specialties": ["DERMA"]
+  },
+
+  {
+    "code": "EYE_EXAM",
+    "name": "Comprehensive eye exam",
+    "description": "Visual acuity, refraction, anterior and posterior segment examination.",
+    "basePrice": 130.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": false,
+    "specialties": ["OPHTHALMO"]
+  },
+  {
+    "code": "IOP_MEASUREMENT",
+    "name": "Intraocular pressure measurement",
+    "description": "Measurement of intraocular pressure for glaucoma screening.",
+    "basePrice": 80.0,
+    "defaultDurationMinutes": 15,
+    "teleconsultationAvailable": false,
+    "specialties": ["OPHTHALMO"]
+  },
+  {
+    "code": "RETINAL_IMAGING",
+    "name": "Retinal imaging and report",
+    "description": "Retinal imaging for retinopathy and other ocular pathologies.",
+    "basePrice": 160.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": false,
+    "specialties": ["OPHTHALMO"]
+  },
+
+  {
+    "code": "PED_CONSULT",
+    "name": "Pediatric consultation",
+    "description": "Consultation for pediatric symptoms, growth, and development.",
+    "basePrice": 110.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["PED"]
+  },
+  {
+    "code": "VACCINATION_VISIT",
+    "name": "Vaccination visit",
+    "description": "Vaccination according to national pediatric immunization schedule.",
+    "basePrice": 60.0,
+    "defaultDurationMinutes": 20,
+    "teleconsultationAvailable": false,
+    "specialties": ["PED", "GP"]
+  },
+
+  {
+    "code": "NEURO_CONSULT",
+    "name": "Neurology consultation",
+    "description": "Assessment of headache, seizures, neuropathies, and other neurological symptoms.",
+    "basePrice": 170.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["NEURO"]
+  },
+  {
+    "code": "EEG_INTERPRET",
+    "name": "EEG interpretation",
+    "description": "Interpretation of electroencephalogram recordings.",
+    "basePrice": 140.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["NEURO"]
+  },
+
+  {
+    "code": "ORTHO_CONSULT",
+    "name": "Orthopedic consultation",
+    "description": "Assessment of bone, joint, and tendon problems.",
+    "basePrice": 140.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["ORTHO"]
+  },
+  {
+    "code": "JOINT_INJECTION",
+    "name": "Joint injection",
+    "description": "Therapeutic intra-articular injection for pain or inflammation.",
+    "basePrice": 180.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": false,
+    "specialties": ["ORTHO", "RHEUMA"]
+  },
+
+  {
+    "code": "ENT_CONSULT",
+    "name": "ENT consultation",
+    "description": "Consultation for ear, nose, and throat complaints.",
+    "basePrice": 120.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["ORL"]
+  },
+  {
+    "code": "AUDIOMETRY",
+    "name": "Audiometry",
+    "description": "Hearing assessment with audiometry.",
+    "basePrice": 90.0,
+    "defaultDurationMinutes": 20,
+    "teleconsultationAvailable": false,
+    "specialties": ["ORL"]
+  },
+
+  {
+    "code": "GASTRO_CONSULT",
+    "name": "Gastroenterology consultation",
+    "description": "Consultation for digestive symptoms and liver conditions.",
+    "basePrice": 150.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["GASTRO"]
+  },
+
+  {
+    "code": "ENDO_CONSULT",
+    "name": "Endocrinology consultation",
+    "description": "Consultation for diabetes, thyroid and other hormonal disorders.",
+    "basePrice": 150.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["ENDO"]
+  },
+
+  {
+    "code": "GYNECO_CONSULT",
+    "name": "Gynecology consultation",
+    "description": "Consultation for gynecologic concerns and reproductive health.",
+    "basePrice": 130.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["GYNECO"]
+  },
+  {
+    "code": "PRENATAL_VISIT",
+    "name": "Prenatal visit",
+    "description": "Routine prenatal examination during pregnancy.",
+    "basePrice": 140.0,
+    "defaultDurationMinutes": 25,
+    "teleconsultationAvailable": true,
+    "specialties": ["GYNECO"]
+  },
+
+  {
+    "code": "PSY_CONSULT",
+    "name": "Psychiatric evaluation",
+    "description": "Comprehensive psychiatric evaluation and treatment planning.",
+    "basePrice": 160.0,
+    "defaultDurationMinutes": 45,
+    "teleconsultationAvailable": true,
+    "specialties": ["PSY"]
+  },
+  {
+    "code": "PSY_FOLLOWUP",
+    "name": "Psychiatric follow-up",
+    "description": "Follow-up visit for medication adjustment and psychotherapy.",
+    "basePrice": 120.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["PSY"]
+  },
+
+  {
+    "code": "RHEUMA_CONSULT",
+    "name": "Rheumatology consultation",
+    "description": "Consultation for chronic inflammatory and autoimmune joint diseases.",
+    "basePrice": 150.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["RHEUMA"]
+  },
+
+  {
+    "code": "PNEUMO_CONSULT",
+    "name": "Pulmonology consultation",
+    "description": "Consultation for asthma, COPD, and other respiratory diseases.",
+    "basePrice": 140.0,
+    "defaultDurationMinutes": 30,
+    "teleconsultationAvailable": true,
+    "specialties": ["PNEUMO"]
+  },
+  {
+    "code": "SPIROMETRY",
+    "name": "Spirometry",
+    "description": "Lung function test with spirometry.",
+    "basePrice": 90.0,
+    "defaultDurationMinutes": 20,
+    "teleconsultationAvailable": false,
+    "specialties": ["PNEUMO"]
+  },
+
+  {
+    "code": "ONCO_CONSULT",
+    "name": "Oncology consultation",
+    "description": "Initial or follow-up consultation for cancer diagnosis or treatment.",
+    "basePrice": 180.0,
+    "defaultDurationMinutes": 40,
+    "teleconsultationAvailable": true,
+    "specialties": ["ONCO"]
+  }
+]
