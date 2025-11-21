@@ -30,6 +30,13 @@ public class PatientProfileMapper {
                 .bloodType(profile.getBloodType())
                 .heightCm(profile.getHeightCm())
                 .weightKg(profile.getWeightKg())
+                .address(profile.getAddress())
+                .city(profile.getCity())
+                .country(profile.getCountry())
+                .maritalStatus(profile.getMaritalStatus())
+                .smoker(profile.getSmoker())
+                .alcoholUse(profile.getAlcoholUse())
+                .notes(profile.getNotes())
                 .build();
     }
 }

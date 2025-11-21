@@ -2,7 +2,7 @@ package tn.esprit.docsbackend.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,9 +36,9 @@ public class Specialty extends BaseEntity {
     private Boolean active = true;
 
     /**
-     * Inverse side of the many-to-many relationship with doctors.
+     * One-to-many relationship with doctors: each doctor has one specialty.
      */
-    @ManyToMany(mappedBy = "specialties")
+    @OneToMany(mappedBy = "specialty")
     @Builder.Default
     private Set<DoctorProfile> doctors = new HashSet<>();
 }

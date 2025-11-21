@@ -30,6 +30,14 @@ public class Act extends BaseEntity {
     @JoinColumn(name = "doctor_id", nullable = false)
     private DoctorProfile doctor;
 
+    /**
+     * Specialty this act is associated with.
+     * This lets us filter acts by specialty during onboarding.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "specialty_id")
+    private Specialty specialty;
+
     @Column(name = "code", length = 50)
     private String code;
 

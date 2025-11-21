@@ -20,9 +20,6 @@ public class DoctorSpecialtySeeder implements DataSeeder {
     private final DoctorProfileRepository doctorProfileRepository;
     private final SpecialtyRepository specialtyRepository;
 
-    private static final int MIN_SPECIALTIES_PER_DOCTOR = 1;
-    private static final int MAX_SPECIALTIES_PER_DOCTOR = 2;
-
     @Override
     @Transactional
     public void seed() {
@@ -42,26 +39,14 @@ public class DoctorSpecialtySeeder implements DataSeeder {
                 continue;
             }
 
-            // If doctor already has specialties, skip to keep seeding idempotent.
-            if (doctor.getSpecialties() != null && !doctor.getSpecialties().isEmpty()) {
+            // If doctor already has a specialty, skip to keep seeding idempotent.
+            if (doctor.getSpecialty() != null) {
                 continue;
             }
 
-            int specialtiesToAssign = (i % 2 == 0) ? MAX_SPECIALTIES_PER_DOCTOR : MIN_SPECIALTIES_PER_DOCTOR;
-
-            if (doctor.getSpecialties() == null) {
-                doctor.setSpecialties(new java.util.HashSet<>());
-            }
-
             int index = i % allSpecialties.size();
-            Specialty first = allSpecialties.get(index);
-            doctor.getSpecialties().add(first);
-
-            if (specialtiesToAssign > 1 && allSpecialties.size() > 1) {
-                int index2 = (i + 3) % allSpecialties.size();
-                Specialty second = allSpecialties.get(index2);
-                doctor.getSpecialties().add(second);
-            }
+            Specialty specialty = allSpecialties.get(index);
+            doctor.setSpecialty(specialty);
         }
 
         doctorProfileRepository.saveAll(doctors);

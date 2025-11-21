@@ -29,12 +29,10 @@ public class DoctorProfileMapper {
 
         User user = profile.getUser();
 
-        List<SpecialtyDto> specialties = null;
-        if (profile.getSpecialties() != null) {
-            specialties = profile.getSpecialties().stream()
-                    .filter(Objects::nonNull)
-                    .map(specialtyMapper::toDto)
-                    .collect(Collectors.toList());
+        SpecialtyDto specialtyDto = null;
+        Specialty specialty = profile.getSpecialty();
+        if (specialty != null) {
+            specialtyDto = specialtyMapper.toDto(specialty);
         }
 
         List<ActDto> acts = null;
@@ -63,7 +61,7 @@ public class DoctorProfileMapper {
                 .teleconsultationEnabled(profile.getTeleconsultationEnabled())
                 .maxDailyAppointments(profile.getMaxDailyAppointments())
                 .averageConsultationDurationMinutes(profile.getAverageConsultationDurationMinutes())
-                .specialties(specialties)
+                .specialty(specialtyDto)
                 .acts(acts)
                 .build();
     }

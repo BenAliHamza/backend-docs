@@ -8,14 +8,19 @@ import org.springframework.web.server.ResponseStatusException;
 import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
 import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
 import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+import tn.esprit.docsbackend.entities.Act;
 import tn.esprit.docsbackend.entities.DoctorProfile;
 import tn.esprit.docsbackend.entities.PatientProfile;
+import tn.esprit.docsbackend.entities.Specialty;
 import tn.esprit.docsbackend.entities.User;
 import tn.esprit.docsbackend.entities.enums.Role;
 import tn.esprit.docsbackend.mappers.DoctorProfileMapper;
 import tn.esprit.docsbackend.mappers.PatientProfileMapper;
+import tn.esprit.docsbackend.repositories.ActRepository;
 import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
 import tn.esprit.docsbackend.repositories.PatientProfileRepository;
+import tn.esprit.docsbackend.repositories.SpecialtyRepository;
+import tn.esprit.docsbackend.repositories.UserRepository;
 import tn.esprit.docsbackend.services.DoctorService;
 import tn.esprit.docsbackend.utils.SecurityUtils;
 
@@ -30,6 +35,9 @@ public class DoctorServiceImpl implements DoctorService {
 
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final UserRepository userRepository;
+    private final ActRepository actRepository;
+    private final SpecialtyRepository specialtyRepository;
     private final DoctorProfileMapper doctorProfileMapper;
     private final PatientProfileMapper patientProfileMapper;
 
@@ -51,6 +59,7 @@ public class DoctorServiceImpl implements DoctorService {
 
     /**
      * Update the profile of the currently authenticated doctor (partial update).
+     * On first successful update, marks user.isFirstLogin = false.
      */
     @Override
     @Transactional
@@ -61,10 +70,17 @@ public class DoctorServiceImpl implements DoctorService {
                 .findByUserIdAndDeletedFalse(currentUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
 
-        // Delegate field-level update logic to the mapper for consistency.
+        // Apply the partial update via mapper
         doctorProfileMapper.updateEntityFromRequest(request, profile);
 
         DoctorProfile saved = doctorProfileRepository.save(profile);
+
+        // If this is the first time completing/updating profile, flip the flag
+        if (Boolean.TRUE.equals(currentUser.getIsFirstLogin())) {
+            currentUser.setIsFirstLogin(false);
+            userRepository.save(currentUser);
+        }
+
         return doctorProfileMapper.toDto(saved);
     }
 
@@ -98,13 +114,11 @@ public class DoctorServiceImpl implements DoctorService {
                 .findByUserIdAndDeletedFalse(patientUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
 
-        // Initialize collections if needed
         Set<PatientProfile> doctorPatients =
                 doctorProfile.getPatients() != null ? doctorProfile.getPatients() : new HashSet<>();
         Set<DoctorProfile> patientDoctors =
                 patientProfile.getDoctors() != null ? patientProfile.getDoctors() : new HashSet<>();
 
-        // If already linked, do nothing (idempotent)
         if (doctorPatients.contains(patientProfile)) {
             doctorProfile.setPatients(doctorPatients);
             patientProfile.setDoctors(patientDoctors);
@@ -117,7 +131,6 @@ public class DoctorServiceImpl implements DoctorService {
         doctorProfile.setPatients(doctorPatients);
         patientProfile.setDoctors(patientDoctors);
 
-        // DoctorProfile is the owning side of the join table, saving it is enough.
         doctorProfileRepository.save(doctorProfile);
     }
 
@@ -147,6 +160,65 @@ public class DoctorServiceImpl implements DoctorService {
 
             doctorProfileRepository.save(doctorProfile);
         }
-        // If not linked, silently ignore (idempotent).
     }
+
+    @Override
+    @Transactional
+    public DoctorProfileDto setupPracticeForCurrentDoctor(Long specialtyId, List<Long> actIds) {
+        if (specialtyId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "specialtyId is required");
+        }
+        if (actIds == null || actIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one actId is required");
+        }
+
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+
+        DoctorProfile doctorProfile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        Specialty specialty = specialtyRepository.findByIdAndDeletedFalse(specialtyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specialty not found"));
+
+        // For onboarding: set the single main specialty
+        doctorProfile.setSpecialty(specialty);
+
+        // Load acts by id
+        List<Act> acts = actRepository.findAllById(actIds);
+
+        if (acts.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No acts found for given ids");
+        }
+
+        int distinctRequestedIds = new java.util.HashSet<>(actIds).size();
+        if (acts.size() != distinctRequestedIds) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Some act ids are invalid");
+        }
+
+        for (Act act : acts) {
+            if (act == null || act.isDeleted()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One of the acts is not available");
+            }
+            if (act.getDoctor() == null || !doctorProfile.getId().equals(act.getDoctor().getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Act " + act.getId() + " does not belong to current doctor");
+            }
+            if (act.getSpecialty() == null || !specialtyId.equals(act.getSpecialty().getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Act " + act.getId() + " does not belong to selected specialty");
+            }
+        }
+
+        // Replace the doctor's acts with the selected ones (onboarding setup)
+        java.util.Set<Act> doctorActs = doctorProfile.getActs() != null
+                ? doctorProfile.getActs()
+                : new java.util.HashSet<>();
+        doctorActs.clear();
+        doctorActs.addAll(acts);
+        doctorProfile.setActs(doctorActs);
+
+        DoctorProfile saved = doctorProfileRepository.save(doctorProfile);
+
+        return doctorProfileMapper.toDto(saved);
+    }
+
 }

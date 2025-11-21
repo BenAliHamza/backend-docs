@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -107,17 +108,11 @@ public class DoctorProfile extends BaseEntity {
     private Set<PatientProfile> patients = new HashSet<>();
 
     /**
-     * Many-to-many relationship between doctors and specialties.
-     * This side owns the join table.
+     * Each doctor has exactly one main specialty.
      */
-    @ManyToMany
-    @JoinTable(
-            name = "doctor_specialties",
-            joinColumns = @JoinColumn(name = "doctor_id"),
-            inverseJoinColumns = @JoinColumn(name = "specialty_id")
-    )
-    @Builder.Default
-    private Set<Specialty> specialties = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "specialty_id")
+    private Specialty specialty;
 
     /**
      * One-to-many relationship between a doctor and their acts.

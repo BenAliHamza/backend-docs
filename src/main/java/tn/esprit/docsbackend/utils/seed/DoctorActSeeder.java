@@ -13,6 +13,7 @@ import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -119,22 +120,12 @@ public class DoctorActSeeder implements DataSeeder {
                 continue;
             }
 
-            Set<Specialty> doctorSpecialties = doctor.getSpecialties();
-            if (doctorSpecialties == null || doctorSpecialties.isEmpty()) {
+            Specialty specialty = doctor.getSpecialty();
+            if (specialty == null || specialty.getCode() == null) {
                 continue;
             }
 
-            // Normalize doctor specialty codes for fast lookup
-            Set<String> doctorSpecialtyCodes = new HashSet<>();
-            for (Specialty specialty : doctorSpecialties) {
-                if (specialty != null && specialty.getCode() != null) {
-                    doctorSpecialtyCodes.add(specialty.getCode().toUpperCase());
-                }
-            }
-
-            if (doctorSpecialtyCodes.isEmpty()) {
-                continue;
-            }
+            String doctorSpecialtyCode = specialty.getCode().toUpperCase(Locale.ROOT);
 
             List<Act> actsToCreate = new ArrayList<>();
             for (ActTemplate template : templates) {
@@ -142,11 +133,10 @@ public class DoctorActSeeder implements DataSeeder {
                     continue;
                 }
 
-                // Check if this template applies to at least one of the doctor's specialties
                 boolean applicable = template.getSpecialties().stream()
                         .filter(Objects::nonNull)
-                        .map(String::toUpperCase)
-                        .anyMatch(doctorSpecialtyCodes::contains);
+                        .map(code -> code.toUpperCase(Locale.ROOT))
+                        .anyMatch(code -> code.equals(doctorSpecialtyCode));
 
                 if (!applicable) {
                     continue;
@@ -154,6 +144,7 @@ public class DoctorActSeeder implements DataSeeder {
 
                 Act act = Act.builder()
                         .doctor(doctor)
+                        .specialty(specialty)
                         .code(template.getCode())
                         .name(template.getName())
                         .description(template.getDescription())

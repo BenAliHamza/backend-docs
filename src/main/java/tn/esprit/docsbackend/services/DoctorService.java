@@ -34,4 +34,9 @@ public interface DoctorService {
      * The patient identifier here is the patient's user id.
      */
     void removePatientFromCurrentDoctor(Long patientUserId);
+
+    /**
+     * Onboarding step: choose one specialty and a set of acts for the current doctor.
+     */
+    DoctorProfileDto setupPracticeForCurrentDoctor(Long specialtyId, List<Long> actIds);
 }

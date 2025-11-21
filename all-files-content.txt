@@ -1,579 +1,510 @@
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/PatientServiceImpl.java =====
-package tn.esprit.docsbackend.services.impl;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/SignupRequest.java =====
+package tn.esprit.docsbackend.dto.auth;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
-import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
-import tn.esprit.docsbackend.dto.patient.PatientProfileUpdateRequest;
-import tn.esprit.docsbackend.entities.DoctorProfile;
-import tn.esprit.docsbackend.entities.PatientProfile;
-import tn.esprit.docsbackend.entities.User;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import tn.esprit.docsbackend.entities.enums.Role;
-import tn.esprit.docsbackend.repositories.PatientProfileRepository;
-import tn.esprit.docsbackend.services.PatientService;
-import tn.esprit.docsbackend.utils.SecurityUtils;
+
+@Getter
+@Setter
+public class SignupRequest {
+
+    @NotBlank
+    @Size(max = 50)
+    private String firstname;
+
+    @NotBlank
+    @Size(max = 50)
+    private String lastname;
+
+    @NotBlank
+    @Email
+    @Size(max = 120)
+    private String email;
+
+    @Size(max = 20)
+    private String phone;
+
+    @NotBlank
+    @Size(min = 6, max = 100)
+    private String password;
+
+    /**
+     * Role to create: DOCTOR or PATIENT.
+     * ADMIN users should be created via admin flows, not public signup.
+     */
+    @NotNull
+    private Role role;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/LoginRequest.java =====
+package tn.esprit.docsbackend.dto.auth;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class LoginRequest {
+
+    @NotBlank
+    @Email
+    @Size(max = 120)
+    private String email;
+
+    @NotBlank
+    @Size(min = 6, max = 100)
+    private String password;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/TokenResponse.java =====
+package tn.esprit.docsbackend.dto.auth;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * Response carrying access and refresh tokens.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TokenResponse {
+
+    private String accessToken;
+
+    private String refreshToken;
+
+    /**
+     * Usually "Bearer".
+     */
+    @Builder.Default
+    private String tokenType = "Bearer";
+
+    /**
+     * Access token validity in seconds (optional, for client UX).
+     */
+    private Long expiresIn;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/RefreshTokenRequest.java =====
+package tn.esprit.docsbackend.dto.auth;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class RefreshTokenRequest {
+
+    @NotBlank
+    private String refreshToken;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/SpecialtyDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+public class SpecialtyDto {
+
+    private Long id;
+
+    private String code;
+
+    private String name;
+
+    private String description;
+
+    private Boolean active;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/ActDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+@Builder
+public class ActDto {
+
+    private Long id;
+
+    private String code;
+
+    private String name;
+
+    private String description;
+
+    private BigDecimal basePrice;
+
+    private Integer defaultDurationMinutes;
+
+    private Boolean teleconsultationAvailable;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPracticeSetupRequest.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Service
-@RequiredArgsConstructor
-public class PatientServiceImpl implements PatientService {
+/**
+ * Request body for doctor onboarding step where they choose
+ * their main specialty and the acts they perform.
+ */
+@Getter
+@Setter
+public class DoctorPracticeSetupRequest {
 
-    private final PatientProfileRepository patientProfileRepository;
+    @NotNull
+    private Long specialtyId;
 
-    @Override
-    public PatientProfileDto getCurrentPatientProfile() {
-        User currentUser = SecurityUtils.getCurrentUserOrThrow();
-
-        if (currentUser.getRole() != Role.PATIENT) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only patients can access this resource");
-        }
-
-        PatientProfile profile = patientProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
-
-        return mapToDto(profile);
-    }
-
-    /**
-     * Update the profile of the currently authenticated patient (partial update).
-     */
-    public PatientProfileDto updateCurrentPatientProfile(PatientProfileUpdateRequest request) {
-        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.PATIENT);
-
-        PatientProfile profile = patientProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
-
-        if (request.getDateOfBirth() != null) {
-            profile.setDateOfBirth(request.getDateOfBirth());
-        }
-        if (request.getGender() != null) {
-            profile.setGender(request.getGender());
-        }
-        if (request.getBloodType() != null) {
-            profile.setBloodType(request.getBloodType());
-        }
-        if (request.getHeightCm() != null) {
-            profile.setHeightCm(request.getHeightCm());
-        }
-        if (request.getWeightKg() != null) {
-            profile.setWeightKg(request.getWeightKg());
-        }
-
-        PatientProfile saved = patientProfileRepository.save(profile);
-        return mapToDto(saved);
-    }
-
-    /**
-     * Returns the list of doctors linked to the currently authenticated patient.
-     */
-    @Transactional(readOnly = true)
-    public List<DoctorProfileDto> getDoctorsOfCurrentPatient() {
-        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.PATIENT);
-
-        PatientProfile profile = patientProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
-
-        return profile.getDoctors().stream()
-                .map(this::mapDoctorToDto)
-                .collect(Collectors.toList());
-    }
-
-    private PatientProfileDto mapToDto(PatientProfile profile) {
-        if (profile == null || profile.getUser() == null) {
-            return null;
-        }
-
-        User user = profile.getUser();
-
-        return PatientProfileDto.builder()
-                .id(profile.getId())
-                .userId(user.getId())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .dateOfBirth(profile.getDateOfBirth())
-                .gender(profile.getGender())
-                .bloodType(profile.getBloodType())
-                .heightCm(profile.getHeightCm())
-                .weightKg(profile.getWeightKg())
-                .build();
-    }
-
-    private DoctorProfileDto mapDoctorToDto(DoctorProfile profile) {
-        if (profile == null || profile.getUser() == null) {
-            return null;
-        }
-
-        User user = profile.getUser();
-
-        return DoctorProfileDto.builder()
-                .id(profile.getId())
-                .userId(user.getId())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .bio(profile.getBio())
-                .yearsOfExperience(profile.getYearsOfExperience())
-                .clinicAddress(profile.getClinicAddress())
-                .consultationFee(profile.getConsultationFee())
-                .build();
-    }
+    @NotEmpty
+    private List<Long> actIds;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/DoctorServiceImpl.java =====
-package tn.esprit.docsbackend.services.impl;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileUpdateRequest.java =====
+package tn.esprit.docsbackend.dto.doctor;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
-import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
-import tn.esprit.docsbackend.entities.DoctorProfile;
-import tn.esprit.docsbackend.entities.PatientProfile;
-import tn.esprit.docsbackend.entities.User;
-import tn.esprit.docsbackend.entities.enums.Role;
-import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
-import tn.esprit.docsbackend.services.DoctorService;
-import tn.esprit.docsbackend.utils.SecurityUtils;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+public class DoctorProfileUpdateRequest {
+
+    @Size(max = 1000)
+    private String bio;
+
+    private Integer yearsOfExperience;
+
+    @Size(max = 255)
+    private String clinicAddress;
+
+    @Size(max = 100)
+    private String city;
+
+    @Size(max = 100)
+    private String country;
+
+    @Size(max = 100)
+    private String medicalRegistrationNumber;
+
+    private BigDecimal consultationFee;
+
+    /**
+     * Whether this doctor currently accepts new patients.
+     */
+    private Boolean acceptsNewPatients;
+
+    /**
+     * Whether the doctor offers teleconsultation / remote visits.
+     */
+    private Boolean teleconsultationEnabled;
+
+    /**
+     * Soft limit for how many appointments per day this doctor usually takes.
+     */
+    private Integer maxDailyAppointments;
+
+    /**
+     * Default consultation duration in minutes.
+     */
+    private Integer averageConsultationDurationMinutes;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Service
-@RequiredArgsConstructor
-public class DoctorServiceImpl implements DoctorService {
+@Getter
+@Setter
+@Builder
+public class DoctorProfileDto {
 
-    private final DoctorProfileRepository doctorProfileRepository;
+    private Long id;
 
-    @Override
-    public DoctorProfileDto getCurrentDoctorProfile() {
-        User currentUser = SecurityUtils.getCurrentUserOrThrow();
+    private Long userId;
 
-        if (currentUser.getRole() != Role.DOCTOR) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only doctors can access this resource");
-        }
+    private String firstname;
 
-        DoctorProfile profile = doctorProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+    private String lastname;
 
-        return mapToDto(profile);
-    }
+    private String email;
 
-    /**
-     * Update the profile of the currently authenticated doctor (partial update).
-     */
-    public DoctorProfileDto updateCurrentDoctorProfile(DoctorProfileUpdateRequest request) {
-        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+    private String phone;
 
-        DoctorProfile profile = doctorProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+    private String bio;
 
-        if (request.getBio() != null) {
-            profile.setBio(request.getBio());
-        }
-        if (request.getYearsOfExperience() != null) {
-            profile.setYearsOfExperience(request.getYearsOfExperience());
-        }
-        if (request.getClinicAddress() != null) {
-            profile.setClinicAddress(request.getClinicAddress());
-        }
-        if (request.getConsultationFee() != null) {
-            profile.setConsultationFee(request.getConsultationFee());
-        }
+    private Integer yearsOfExperience;
 
-        DoctorProfile saved = doctorProfileRepository.save(profile);
-        return mapToDto(saved);
-    }
+    private String clinicAddress;
+
+    private String city;
+
+    private String country;
+
+    private String medicalRegistrationNumber;
+
+    private BigDecimal consultationFee;
+
+    private Boolean acceptsNewPatients;
+
+    private Boolean teleconsultationEnabled;
+
+    private Integer maxDailyAppointments;
+
+    private Integer averageConsultationDurationMinutes;
 
     /**
-     * Returns the list of patients linked to the currently authenticated doctor.
+     * Single main specialty of this doctor.
      */
-    @Transactional(readOnly = true)
-    public List<PatientProfileDto> getPatientsOfCurrentDoctor() {
-        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+    private SpecialtyDto specialty;
 
-        DoctorProfile profile = doctorProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
-
-        return profile.getPatients().stream()
-                .map(this::mapPatientToDto)
-                .collect(Collectors.toList());
-    }
-
-    private DoctorProfileDto mapToDto(DoctorProfile profile) {
-        if (profile == null || profile.getUser() == null) {
-            return null;
-        }
-
-        User user = profile.getUser();
-
-        return DoctorProfileDto.builder()
-                .id(profile.getId())
-                .userId(user.getId())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .bio(profile.getBio())
-                .yearsOfExperience(profile.getYearsOfExperience())
-                .clinicAddress(profile.getClinicAddress())
-                .consultationFee(profile.getConsultationFee())
-                .build();
-    }
-
-    private PatientProfileDto mapPatientToDto(PatientProfile profile) {
-        if (profile == null || profile.getUser() == null) {
-            return null;
-        }
-
-        User user = profile.getUser();
-
-        return PatientProfileDto.builder()
-                .id(profile.getId())
-                .userId(user.getId())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .dateOfBirth(profile.getDateOfBirth())
-                .gender(profile.getGender())
-                .bloodType(profile.getBloodType())
-                .heightCm(profile.getHeightCm())
-                .weightKg(profile.getWeightKg())
-                .build();
-    }
+    /**
+     * Acts/services this doctor offers.
+     */
+    private List<ActDto> acts;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/UserServiceImpl.java =====
-package tn.esprit.docsbackend.services.impl;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/UserDto.java =====
+package tn.esprit.docsbackend.dto.user;
 
-import org.springframework.stereotype.Service;
-import tn.esprit.docsbackend.dto.user.UserDto;
-import tn.esprit.docsbackend.entities.User;
-import tn.esprit.docsbackend.services.UserService;
-import tn.esprit.docsbackend.utils.SecurityUtils;
-
-@Service
-public class UserServiceImpl implements UserService {
-
-    @Override
-    public UserDto getCurrentUser() {
-        User user = SecurityUtils.getCurrentUserOrThrow();
-        return mapToDto(user);
-    }
-
-    private UserDto mapToDto(User user) {
-        if (user == null) {
-            return null;
-        }
-
-        return UserDto.builder()
-                .id(user.getId())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .profileImage(user.getProfileImage())
-                .isFirstLogin(user.getIsFirstLogin())
-                .role(user.getRole())
-                .status(user.getStatus())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .build();
-    }
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/impl/AuthServiceImpl.java =====
-package tn.esprit.docsbackend.services.impl;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import tn.esprit.docsbackend.dto.auth.LoginRequest;
-import tn.esprit.docsbackend.dto.auth.RefreshTokenRequest;
-import tn.esprit.docsbackend.dto.auth.SignupRequest;
-import tn.esprit.docsbackend.dto.auth.TokenResponse;
-import tn.esprit.docsbackend.entities.DoctorProfile;
-import tn.esprit.docsbackend.entities.PatientProfile;
-import tn.esprit.docsbackend.entities.RefreshToken;
-import tn.esprit.docsbackend.entities.User;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import tn.esprit.docsbackend.entities.enums.Role;
 import tn.esprit.docsbackend.entities.enums.UserStatus;
-import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
-import tn.esprit.docsbackend.repositories.PatientProfileRepository;
-import tn.esprit.docsbackend.repositories.RefreshTokenRepository;
-import tn.esprit.docsbackend.repositories.UserRepository;
-import tn.esprit.docsbackend.services.AuthService;
-import tn.esprit.docsbackend.utils.JwtTokenProvider;
 
 import java.time.LocalDateTime;
 
-@Service
-@RequiredArgsConstructor
-public class AuthServiceImpl implements AuthService {
+@Getter
+@Setter
+@Builder
+public class UserDto {
 
-    private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final DoctorProfileRepository doctorProfileRepository;
-    private final PatientProfileRepository patientProfileRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
+    private Long id;
 
-    @Override
-    public TokenResponse signup(SignupRequest request) {
-        if (request.getRole() == Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot sign up as ADMIN");
-        }
+    private String firstname;
 
-        if (userRepository.existsByEmailAndDeletedFalse(request.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already in use");
-        }
+    private String lastname;
 
-        User user = User.builder()
-                .firstname(request.getFirstname())
-                .lastname(request.getLastname())
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
-                .status(UserStatus.ACTIVE)
-                .isFirstLogin(true)
-                .build();
+    private String email;
 
-        userRepository.save(user);
+    private String phone;
 
-        // Create associated profile based on role
-        if (request.getRole() == Role.DOCTOR) {
-            DoctorProfile doctorProfile = DoctorProfile.builder()
-                    .user(user)
-                    .build();
-            doctorProfileRepository.save(doctorProfile);
-        } else if (request.getRole() == Role.PATIENT) {
-            PatientProfile patientProfile = PatientProfile.builder()
-                    .user(user)
-                    .build();
-            patientProfileRepository.save(patientProfile);
-        }
+    private String profileImage;
 
-        return generateTokensForUser(user);
-    }
+    private Boolean isFirstLogin;
 
-    @Override
-    public TokenResponse login(LoginRequest request) {
-        User user = userRepository.findByEmailAndDeletedFalse(request.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+    private Role role;
 
-        if (user.getStatus() == UserStatus.BLOCKED || user.getStatus() == UserStatus.INACTIVE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is not active");
-        }
+    private UserStatus status;
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
-        }
+    private LocalDateTime createdAt;
 
-        return generateTokensForUser(user);
-    }
-
-    @Override
-    public TokenResponse refresh(RefreshTokenRequest request) {
-        String providedToken = request.getRefreshToken();
-
-        if (!jwtTokenProvider.validateToken(providedToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
-        }
-
-        String tokenType = jwtTokenProvider.getTokenType(providedToken);
-        if (!"REFRESH".equals(tokenType)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token type");
-        }
-
-        RefreshToken storedToken = refreshTokenRepository
-                .findByTokenAndRevokedFalseAndDeletedFalse(providedToken)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token not found or revoked"));
-
-        if (storedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            storedToken.setRevoked(true);
-            refreshTokenRepository.save(storedToken);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired");
-        }
-
-        User user = storedToken.getUser();
-        if (user == null || Boolean.TRUE.equals(user.isDeleted())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User for this token no longer exists");
-        }
-
-        if (user.getStatus() == UserStatus.BLOCKED || user.getStatus() == UserStatus.INACTIVE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is not active");
-        }
-
-        // Rotate refresh token: revoke old, issue new
-        storedToken.setRevoked(true);
-        refreshTokenRepository.save(storedToken);
-
-        return generateTokensForUser(user);
-    }
-
-    private TokenResponse generateTokensForUser(User user) {
-        String accessToken = jwtTokenProvider.generateAccessToken(user);
-        String refreshTokenValue = jwtTokenProvider.generateRefreshToken(user);
-
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime refreshExpiry = now.plusSeconds(jwtTokenProvider.getRefreshTokenValidityMillis() / 1000);
-
-        RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
-                .token(refreshTokenValue)
-                .expiresAt(refreshExpiry)
-                .revoked(false)
-                .build();
-
-        refreshTokenRepository.save(refreshToken);
-
-        long expiresInSeconds = jwtTokenProvider.getAccessTokenValidityMillis() / 1000;
-
-        return TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshTokenValue)
-                .expiresIn(expiresInSeconds)
-                .build();
-    }
+    private LocalDateTime updatedAt;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/UserService.java =====
-package tn.esprit.docsbackend.services;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/common/ApiErrorResponse.java =====
+package tn.esprit.docsbackend.dto.common;
 
-import tn.esprit.docsbackend.dto.user.UserDto;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface UserService {
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Getter
+@Setter
+@Builder
+public class ApiErrorResponse {
+
+    private LocalDateTime timestamp;
+
+    private int status;
+
+    private String error;
+
+    private String message;
+
+    private String path;
 
     /**
-     * Returns the currently authenticated user's profile information.
+     * Optional map of field -> validation error messages.
      */
-    UserDto getCurrentUser();
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Map<String, List<String>> fieldErrors;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/PatientService.java =====
-package tn.esprit.docsbackend.services;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/common/ListResponse.java =====
+package tn.esprit.docsbackend.dto.common;
 
-import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-public interface PatientService {
+import java.util.List;
 
-    /**
-     * Returns the profile of the currently authenticated patient.
-     */
-    PatientProfileDto getCurrentPatientProfile();
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ListResponse<T> {
+
+    private List<T> items;
+
+    private long total;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/DoctorService.java =====
-package tn.esprit.docsbackend.services;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/patient/PatientProfileDto.java =====
+package tn.esprit.docsbackend.dto.patient;
 
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface DoctorService {
+import java.time.LocalDate;
 
-    /**
-     * Returns the profile of the currently authenticated doctor.
-     */
-    DoctorProfileDto getCurrentDoctorProfile();
+@Getter
+@Setter
+@Builder
+public class PatientProfileDto {
+
+    private Long id;
+
+    private Long userId;
+
+    private String firstname;
+
+    private String lastname;
+
+    private String email;
+
+    private String phone;
+
+    private LocalDate dateOfBirth;
+
+    private String gender;
+
+    private String bloodType;
+
+    private Integer heightCm;
+
+    private Integer weightKg;
+
+    private String address;
+
+    private String city;
+
+    private String country;
+
+    private String maritalStatus;
+
+    private Boolean smoker;
+
+    private Boolean alcoholUse;
+
+    private String notes;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/AuthService.java =====
-package tn.esprit.docsbackend.services;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/patient/PatientProfileUpdateRequest.java =====
+package tn.esprit.docsbackend.dto.patient;
 
-import tn.esprit.docsbackend.dto.auth.LoginRequest;
-import tn.esprit.docsbackend.dto.auth.RefreshTokenRequest;
-import tn.esprit.docsbackend.dto.auth.SignupRequest;
-import tn.esprit.docsbackend.dto.auth.TokenResponse;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface AuthService {
+import java.time.LocalDate;
 
-    /**
-     * Register a new user (DOCTOR or PATIENT).
-     */
-    TokenResponse signup(SignupRequest request);
+@Getter
+@Setter
+public class PatientProfileUpdateRequest {
 
-    /**
-     * Authenticate user and return access + refresh tokens.
-     */
-    TokenResponse login(LoginRequest request);
+    private LocalDate dateOfBirth;
 
-    /**
-     * Use a refresh token to obtain new access (and possibly refresh) tokens.
-     */
-    TokenResponse refresh(RefreshTokenRequest request);
-}
+    @Size(max = 20)
+    private String gender;
 
+    @Size(max = 10)
+    private String bloodType;
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/services/CustomUserDetailsService.java =====
-package tn.esprit.docsbackend.services;
+    private Integer heightCm;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-import tn.esprit.docsbackend.entities.User;
-import tn.esprit.docsbackend.entities.enums.UserStatus;
-import tn.esprit.docsbackend.repositories.UserRepository;
+    private Integer weightKg;
 
-import java.util.Collections;
+    @Size(max = 255)
+    private String address;
 
-@Service
-@RequiredArgsConstructor
-public class CustomUserDetailsService implements UserDetailsService {
+    @Size(max = 100)
+    private String city;
 
-    private final UserRepository userRepository;
+    @Size(max = 100)
+    private String country;
 
-    /**
-     * In this implementation, "username" is the email.
-     */
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmailAndDeletedFalse(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    @Size(max = 30)
+    private String maritalStatus;
 
-        if (user.getStatus() == UserStatus.BLOCKED || user.getStatus() == UserStatus.INACTIVE) {
-            throw new UsernameNotFoundException("User is not active");
-        }
+    private Boolean smoker;
 
-        String roleName = user.getRole() != null ? user.getRole().name() : "PATIENT";
+    private Boolean alcoholUse;
 
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + roleName)))
-                .accountLocked(user.getStatus() == UserStatus.BLOCKED)
-                .disabled(user.getStatus() == UserStatus.INACTIVE)
-                .build();
-    }
+    @Size(max = 1000)
+    private String notes;
 }
 
 

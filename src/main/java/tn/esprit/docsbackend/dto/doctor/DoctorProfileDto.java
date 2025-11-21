@@ -47,12 +47,12 @@ public class DoctorProfileDto {
     private Integer averageConsultationDurationMinutes;
 
     /**
-     * Static reference specialties associated with this doctor.
+     * Single main specialty of this doctor.
      */
-    private List<SpecialtyDto> specialties;
+    private SpecialtyDto specialty;
 
     /**
-     * Acts/services this doctor offers (derived from static catalog + doctor specialties).
+     * Acts/services this doctor offers.
      */
     private List<ActDto> acts;
 }
