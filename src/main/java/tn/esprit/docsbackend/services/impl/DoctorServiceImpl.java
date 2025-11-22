@@ -162,6 +162,14 @@ public class DoctorServiceImpl implements DoctorService {
         }
     }
 
+    /**
+     * Onboarding step:
+     * - Doctor chooses a main specialty
+     * - Doctor chooses a set of acts to offer
+     *
+     * We DO NOT enforce that acts "belong" to this doctor.
+     * Multiple doctors can use the same acts, that's fine.
+     */
     @Override
     @Transactional
     public DoctorProfileDto setupPracticeForCurrentDoctor(Long specialtyId, List<Long> actIds) {
@@ -181,7 +189,7 @@ public class DoctorServiceImpl implements DoctorService {
         Specialty specialty = specialtyRepository.findByIdAndDeletedFalse(specialtyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specialty not found"));
 
-        // For onboarding: set the single main specialty
+        // Set the main specialty
         doctorProfile.setSpecialty(specialty);
 
         // Load acts by id
@@ -200,18 +208,26 @@ public class DoctorServiceImpl implements DoctorService {
             if (act == null || act.isDeleted()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One of the acts is not available");
             }
-            if (act.getDoctor() == null || !doctorProfile.getId().equals(act.getDoctor().getId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Act " + act.getId() + " does not belong to current doctor");
-            }
+
+            // Optional: keep this if you still want to enforce that
+            // doctors only pick acts for the selected specialty.
             if (act.getSpecialty() == null || !specialtyId.equals(act.getSpecialty().getId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Act " + act.getId() + " does not belong to selected specialty");
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Act " + act.getId() + " does not belong to selected specialty"
+                );
             }
+
+            // IMPORTANT: we DO NOT validate act.getDoctor() here,
+            // and we DO NOT change act.getDoctor().
+            // Acts can be reused by multiple doctors conceptually.
         }
 
-        // Replace the doctor's acts with the selected ones (onboarding setup)
-        java.util.Set<Act> doctorActs = doctorProfile.getActs() != null
+        // Replace the doctor's acts with the selected ones
+        Set<Act> doctorActs = doctorProfile.getActs() != null
                 ? doctorProfile.getActs()
-                : new java.util.HashSet<>();
+                : new HashSet<>();
+
         doctorActs.clear();
         doctorActs.addAll(acts);
         doctorProfile.setActs(doctorActs);

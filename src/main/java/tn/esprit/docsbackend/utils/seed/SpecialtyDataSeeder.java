@@ -1,7 +1,9 @@
 package tn.esprit.docsbackend.utils.seed;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,35 +22,16 @@ public class SpecialtyDataSeeder implements DataSeeder {
 
     /**
      * DTO used only for JSON seeding.
+     * The "id" field comes from JSON but we DO NOT map it to the entity id,
+     * because the entity uses IDENTITY auto-generation.
      */
+    @Setter
+    @Getter
     public static class SpecialtySeed {
+        private Long id;          // informational only, DO NOT push to entity id
         private String code;
         private String name;
         private String description;
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
     }
 
     @Override
@@ -72,8 +55,10 @@ public class SpecialtyDataSeeder implements DataSeeder {
                 continue;
             }
 
+            // Idempotency: skip if a non-deleted specialty with same name already exists
             boolean exists = specialtyRepository.existsByNameIgnoreCaseAndDeletedFalse(seed.getName());
             if (exists) {
+                log.debug("SpecialtyDataSeeder: specialty '{}' already exists, skipping.", seed.getName());
                 continue;
             }
 
@@ -84,8 +69,20 @@ public class SpecialtyDataSeeder implements DataSeeder {
                     .active(true)
                     .build();
 
-            specialtyRepository.save(specialty);
-            log.info("SpecialtyDataSeeder: created specialty {} ({})", seed.getName(), seed.getCode());
+            // ⚠️ IMPORTANT:
+            // Do NOT set specialty.setId(seed.getId());
+            // The entity id is auto-generated (IDENTITY), and forcing it
+            // breaks Hibernate's insert/update detection and causes
+            // StaleObjectStateException / ObjectOptimisticLockingFailureException.
+
+            Specialty saved = specialtyRepository.save(specialty);
+            log.info(
+                    "SpecialtyDataSeeder: created specialty '{}' (code={}, jsonId={}, dbId={})",
+                    seed.getName(),
+                    seed.getCode(),
+                    seed.getId(),
+                    saved.getId()
+            );
         }
     }
 }

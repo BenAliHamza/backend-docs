@@ -1,75 +1,90 @@
 [
   {
+    "id": 1,
     "code": "GP",
     "name": "General Practice",
     "description": "General practitioner / family medicine, first point of contact for most patients."
   },
   {
+    "id": 2,
     "code": "CARDIO",
     "name": "Cardiology",
     "description": "Diagnosis and treatment of heart and cardiovascular diseases."
   },
   {
+    "id": 3,
     "code": "DERMA",
     "name": "Dermatology",
     "description": "Skin, hair, and nail disorders."
   },
   {
+    "id": 4,
     "code": "OPHTHALMO",
     "name": "Ophthalmology",
     "description": "Eye and vision disorders."
   },
   {
+    "id": 5,
     "code": "PED",
     "name": "Pediatrics",
     "description": "Medical care of infants, children, and adolescents."
   },
   {
+    "id": 6,
     "code": "NEURO",
     "name": "Neurology",
     "description": "Disorders of the brain and nervous system."
   },
   {
+    "id": 7,
     "code": "ORTHO",
     "name": "Orthopedics",
     "description": "Musculoskeletal system including bones, joints, ligaments, tendons, and muscles."
   },
   {
+    "id": 8,
     "code": "ORL",
     "name": "Otolaryngology (ENT)",
     "description": "Ear, nose, and throat disorders."
   },
   {
+    "id": 9,
     "code": "GASTRO",
     "name": "Gastroenterology",
     "description": "Digestive system and its disorders."
   },
   {
+    "id": 10,
     "code": "ENDO",
     "name": "Endocrinology",
     "description": "Hormonal and metabolic disorders."
   },
   {
+    "id": 11,
     "code": "GYNECO",
     "name": "Gynecology & Obstetrics",
     "description": "Women’s reproductive health and pregnancy."
   },
   {
+    "id": 12,
     "code": "PSY",
     "name": "Psychiatry",
     "description": "Mental, emotional, and behavioral disorders."
   },
   {
+    "id": 13,
     "code": "RHEUMA",
     "name": "Rheumatology",
     "description": "Joint, soft tissue, autoimmune and inflammatory diseases."
   },
   {
+    "id": 14,
     "code": "PNEUMO",
     "name": "Pulmonology",
     "description": "Respiratory system and lung diseases."
   },
   {
+    "id": 15,
     "code": "ONCO",
     "name": "Oncology",
     "description": "Diagnosis and treatment of cancer."

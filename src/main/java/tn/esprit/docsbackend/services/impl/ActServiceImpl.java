@@ -53,23 +53,16 @@ public class ActServiceImpl implements ActService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "specialtyId is required");
         }
 
-        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
-
-        DoctorProfile doctor = doctorProfileRepository
-                .findByUserIdAndDeletedFalse(currentUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
-
+        // Make sure the specialty exists
         Specialty specialty = specialtyRepository.findByIdAndDeletedFalse(specialtyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specialty not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Specialty not found"));
 
-        if (doctor.getSpecialty() == null || !doctor.getSpecialty().getId().equals(specialty.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Doctor is not associated with this specialty");
-        }
-
-        List<Act> acts = actRepository.findByDoctorIdAndSpecialtyIdAndDeletedFalse(doctor.getId(), specialtyId);
+        // Purely "acts by specialty", no doctor involved
+        List<Act> acts = actRepository.findBySpecialtyIdAndDeletedFalse(specialty.getId());
 
         return acts.stream()
                 .map(actMapper::toDto)
                 .collect(Collectors.toList());
     }
+
 }
