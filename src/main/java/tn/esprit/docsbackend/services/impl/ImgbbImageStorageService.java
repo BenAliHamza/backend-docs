@@ -1,86 +1,119 @@
 package tn.esprit.docsbackend.services.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import tn.esprit.docsbackend.config.ImageStorageProperties;
+import org.springframework.web.server.ResponseStatusException;
 import tn.esprit.docsbackend.services.ImageStorageService;
 
 import java.io.IOException;
-import java.util.Base64;
+import java.util.Map;
 
-/**
- * ImageStorageService implementation that uploads images to ImgBB.
- *
- * Docs: https://api.imgbb.com/
- *
- * Uses properties from ImageStorageProperties (image-storage.imgbb.*).
- */
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ImgbbImageStorageService implements ImageStorageService {
 
-    private final ImageStorageProperties properties;
+    @Value("${image-storage.imgbb.api-key}")
+    private String apiKey;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    /**
+     * Use the same key name as in application.yml: image-storage.imgbb.api-url
+     */
+    @Value("${image-storage.imgbb.api-url:https://api.imgbb.com/1/upload}")
+    private String uploadUrl;
+
+    // Simple RestTemplate – for real projects you might inject a @Bean
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public String uploadImage(MultipartFile file, String filenameHint) {
-        String apiKey = properties.getApiKey();
-        String apiUrl = properties.getApiUrl();
-
-        if (apiKey == null || apiKey.isBlank()) {
-            log.error("ImgBB API key is not configured");
-            throw new IllegalStateException("Image hosting is not configured on the server");
-        }
-
+    public String uploadImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Image file is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No image file provided");
         }
 
         try {
-            // ImgBB accepts "image" as base64 string in form-data.
-            String base64 = Base64.getEncoder().encodeToString(file.getBytes());
+            byte[] bytes = file.getBytes();
+
+            // We send the *file* as multipart, not a base64 string.
+            ByteArrayResource imageResource = new ByteArrayResource(bytes) {
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename() != null
+                            ? file.getOriginalFilename()
+                            : "upload-image";
+                }
+            };
+
+            var body = new org.springframework.util.LinkedMultiValueMap<String, Object>();
+            body.add("key", apiKey);
+            body.add("image", imageResource);
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            String body = "key=" + apiKey + "&image=" + base64;
+            HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
 
-            HttpEntity<String> requestEntity = new HttpEntity<>(body, headers);
+            log.info("ImgbbImageStorageService: uploading image to ImgBB (size={} bytes, url={})",
+                    bytes.length, uploadUrl);
 
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> responseEntity =
-                    restTemplate.exchange(apiUrl, HttpMethod.POST, requestEntity, String.class);
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    uploadUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    Map.class
+            );
 
-            if (!responseEntity.getStatusCode().is2xxSuccessful() || responseEntity.getBody() == null) {
-                log.error("ImgBB upload failed with status {} and body {}",
-                        responseEntity.getStatusCode(), responseEntity.getBody());
-                throw new IllegalStateException("Failed to upload image");
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                log.error("ImgbbImageStorageService: non-success response from ImgBB: status={}, body={}",
+                        response.getStatusCode(), response.getBody());
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Image hosting service returned an error"
+                );
             }
 
-            String responseBody = responseEntity.getBody();
-            JsonNode root = objectMapper.readTree(responseBody);
-
-            JsonNode dataNode = root.path("data");
-            JsonNode urlNode = dataNode.path("url");
-
-            if (urlNode.isMissingNode() || urlNode.asText().isBlank()) {
-                log.error("ImgBB response missing URL: {}", responseBody);
-                throw new IllegalStateException("Image upload response did not contain URL");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+            if (data == null || !data.containsKey("url")) {
+                log.error("ImgbbImageStorageService: ImgBB response missing 'data.url': {}", response.getBody());
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Image hosting response did not contain image URL"
+                );
             }
 
-            return urlNode.asText();
-        } catch (IOException | RestClientException e) {
-            log.error("Error while uploading image to ImgBB", e);
-            throw new IllegalStateException("Failed to upload image", e);
+            String imageUrl = data.get("url").toString();
+            log.info("ImgbbImageStorageService: uploaded image successfully -> {}", imageUrl);
+            return imageUrl;
+
+        } catch (HttpClientErrorException e) {
+            // This is where "Invalid base64 string" was being logged
+            log.error("ImgbbImageStorageService: HTTP error from ImgBB: status={}, body={}",
+                    e.getStatusCode(), e.getResponseBodyAsString(), e);
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Image hosting service rejected the image"
+            );
+        } catch (IOException e) {
+            log.error("ImgbbImageStorageService: failed to read uploaded file bytes", e);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Could not read image file"
+            );
+        } catch (Exception e) {
+            log.error("ImgbbImageStorageService: unexpected error while uploading image", e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Unexpected error while uploading image"
+            );
         }
     }
 }

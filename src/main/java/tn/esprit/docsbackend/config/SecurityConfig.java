@@ -3,6 +3,7 @@ package tn.esprit.docsbackend.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -39,6 +40,7 @@ public class SecurityConfig {
                                 "/auth/refresh",
                                 "/api/specialties/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/doctors/search", "/api/doctors/*/public").permitAll()
                         // Swagger / Actuator can be opened later if needed
                         .anyRequest().authenticated()
                 )

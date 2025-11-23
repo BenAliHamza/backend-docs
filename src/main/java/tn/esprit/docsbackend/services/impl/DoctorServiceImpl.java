@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
 import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
+import tn.esprit.docsbackend.dto.doctor.DoctorPublicProfileDto;
+import tn.esprit.docsbackend.dto.doctor.DoctorSearchResultDto;
 import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
 import tn.esprit.docsbackend.entities.Act;
 import tn.esprit.docsbackend.entities.DoctorProfile;
@@ -14,6 +16,8 @@ import tn.esprit.docsbackend.entities.PatientProfile;
 import tn.esprit.docsbackend.entities.Specialty;
 import tn.esprit.docsbackend.entities.User;
 import tn.esprit.docsbackend.entities.enums.Role;
+import tn.esprit.docsbackend.entities.enums.UserStatus;
+import tn.esprit.docsbackend.mappers.ActMapper;
 import tn.esprit.docsbackend.mappers.DoctorProfileMapper;
 import tn.esprit.docsbackend.mappers.PatientProfileMapper;
 import tn.esprit.docsbackend.repositories.ActRepository;
@@ -40,6 +44,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final SpecialtyRepository specialtyRepository;
     private final DoctorProfileMapper doctorProfileMapper;
     private final PatientProfileMapper patientProfileMapper;
+    private final ActMapper actMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -162,14 +167,6 @@ public class DoctorServiceImpl implements DoctorService {
         }
     }
 
-    /**
-     * Onboarding step:
-     * - Doctor chooses a main specialty
-     * - Doctor chooses a set of acts to offer
-     *
-     * We DO NOT enforce that acts "belong" to this doctor.
-     * Multiple doctors can use the same acts, that's fine.
-     */
     @Override
     @Transactional
     public DoctorProfileDto setupPracticeForCurrentDoctor(Long specialtyId, List<Long> actIds) {
@@ -189,7 +186,7 @@ public class DoctorServiceImpl implements DoctorService {
         Specialty specialty = specialtyRepository.findByIdAndDeletedFalse(specialtyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specialty not found"));
 
-        // Set the main specialty
+        // For onboarding: set the single main specialty
         doctorProfile.setSpecialty(specialty);
 
         // Load acts by id
@@ -208,26 +205,14 @@ public class DoctorServiceImpl implements DoctorService {
             if (act == null || act.isDeleted()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One of the acts is not available");
             }
-
-            // Optional: keep this if you still want to enforce that
-            // doctors only pick acts for the selected specialty.
-            if (act.getSpecialty() == null || !specialtyId.equals(act.getSpecialty().getId())) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Act " + act.getId() + " does not belong to selected specialty"
-                );
-            }
-
-            // IMPORTANT: we DO NOT validate act.getDoctor() here,
-            // and we DO NOT change act.getDoctor().
-            // Acts can be reused by multiple doctors conceptually.
+            // We no longer force acts to belong to this doctor or specialty here,
+            // because the doctor is choosing from a global catalog seeded by specialty.
         }
 
-        // Replace the doctor's acts with the selected ones
-        Set<Act> doctorActs = doctorProfile.getActs() != null
+        // Replace the doctor's acts with the selected ones (onboarding setup)
+        java.util.Set<Act> doctorActs = doctorProfile.getActs() != null
                 ? doctorProfile.getActs()
-                : new HashSet<>();
-
+                : new java.util.HashSet<>();
         doctorActs.clear();
         doctorActs.addAll(acts);
         doctorProfile.setActs(doctorActs);
@@ -237,4 +222,138 @@ public class DoctorServiceImpl implements DoctorService {
         return doctorProfileMapper.toDto(saved);
     }
 
+    /**
+     * Search doctors with optional filters.
+     * This is a simple in-memory filter over all doctor profiles for now.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoctorSearchResultDto> searchDoctors(
+            String query,
+            Long specialtyId,
+            String city,
+            String country,
+            Boolean teleconsultationEnabled,
+            Boolean acceptingNewPatients
+    ) {
+        List<DoctorProfile> doctors = doctorProfileRepository.findAll();
+
+        return doctors.stream()
+                .filter(doctor -> doctor != null && !doctor.isDeleted())
+                .filter(doctor -> {
+                    User u = doctor.getUser();
+                    return u != null
+                            && !u.isDeleted()
+                            && u.getStatus() == UserStatus.ACTIVE
+                            && u.getRole() == Role.DOCTOR;
+                })
+                .filter(doctor -> {
+                    if (specialtyId == null) return true;
+                    Specialty sp = doctor.getSpecialty();
+                    return sp != null && specialtyId.equals(sp.getId());
+                })
+                .filter(doctor -> {
+                    if (city == null || city.isBlank()) return true;
+                    String docCity = doctor.getCity();
+                    return docCity != null && docCity.equalsIgnoreCase(city);
+                })
+                .filter(doctor -> {
+                    if (country == null || country.isBlank()) return true;
+                    String docCountry = doctor.getCountry();
+                    return docCountry != null && docCountry.equalsIgnoreCase(country);
+                })
+                .filter(doctor -> {
+                    if (teleconsultationEnabled == null) return true;
+                    Boolean flag = doctor.getTeleconsultationEnabled();
+                    return flag != null && flag.equals(teleconsultationEnabled);
+                })
+                .filter(doctor -> {
+                    if (acceptingNewPatients == null) return true;
+                    Boolean flag = doctor.getAcceptsNewPatients();
+                    return flag != null && flag.equals(acceptingNewPatients);
+                })
+                .filter(doctor -> {
+                    if (query == null || query.isBlank()) {
+                        return true;
+                    }
+                    String q = query.toLowerCase().trim();
+
+                    User u = doctor.getUser();
+                    String first = (u != null && u.getFirstname() != null) ? u.getFirstname().toLowerCase() : "";
+                    String last = (u != null && u.getLastname() != null) ? u.getLastname().toLowerCase() : "";
+
+                    Specialty sp = doctor.getSpecialty();
+                    String specName = (sp != null && sp.getName() != null) ? sp.getName().toLowerCase() : "";
+
+                    return first.contains(q) || last.contains(q) || specName.contains(q);
+                })
+                .map(this::toSearchResultDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Public profile view for a doctor by doctor profile id.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public DoctorPublicProfileDto getDoctorPublicProfile(Long doctorId) {
+        DoctorProfile doctor = doctorProfileRepository.findById(doctorId)
+                .filter(d -> !d.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Doctor profile with id=" + doctorId + " not found"
+                ));
+
+        return toPublicProfileDto(doctor);
+    }
+
+    // ----------------- Mapping helpers -----------------
+
+    private DoctorSearchResultDto toSearchResultDto(DoctorProfile doctor) {
+        User user = doctor.getUser();
+        Specialty specialty = doctor.getSpecialty();
+
+        return DoctorSearchResultDto.builder()
+                .doctorId(doctor.getId())
+                .userId(user != null ? user.getId() : null)
+                .firstName(user != null ? user.getFirstname() : null)
+                .lastName(user != null ? user.getLastname() : null)
+                .specialtyId(specialty != null ? specialty.getId() : null)
+                .specialtyName(specialty != null ? specialty.getName() : null)
+                .city(doctor.getCity())
+                .country(doctor.getCountry())
+                .profileImageUrl(user != null ? user.getProfileImage() : null)
+                .teleconsultationEnabled(doctor.getTeleconsultationEnabled())
+                .acceptingNewPatients(doctor.getAcceptsNewPatients())
+                .build();
+    }
+
+    private DoctorPublicProfileDto toPublicProfileDto(DoctorProfile doctor) {
+        User user = doctor.getUser();
+        Specialty specialty = doctor.getSpecialty();
+
+        List<tn.esprit.docsbackend.dto.doctor.ActDto> actDtos = doctor.getActs().stream()
+                .filter(act -> act != null && !act.isDeleted())
+                .map(actMapper::toDto)
+                .collect(Collectors.toList());
+
+        return DoctorPublicProfileDto.builder()
+                .doctorId(doctor.getId())
+                .userId(user != null ? user.getId() : null)
+                .firstName(user != null ? user.getFirstname() : null)
+                .lastName(user != null ? user.getLastname() : null)
+                .profileImageUrl(user != null ? user.getProfileImage() : null)
+                .specialtyId(specialty != null ? specialty.getId() : null)
+                .specialtyName(specialty != null ? specialty.getName() : null)
+                .city(doctor.getCity())
+                .country(doctor.getCountry())
+                .clinicAddress(doctor.getClinicAddress())
+                .bio(doctor.getBio())
+                .yearsOfExperience(doctor.getYearsOfExperience())
+                .consultationFee(doctor.getConsultationFee())
+                .acceptingNewPatients(doctor.getAcceptsNewPatients())
+                .teleconsultationEnabled(doctor.getTeleconsultationEnabled())
+                .acts(actDtos)
+                .build();
+    }
 }
