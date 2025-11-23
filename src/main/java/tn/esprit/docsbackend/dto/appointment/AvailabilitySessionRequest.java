@@ -1,38 +1,31 @@
-// src/main/java/tn/esprit/docsbackend/dto/appointment/AvailabilitySessionRequest.java
 package tn.esprit.docsbackend.dto.appointment;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import tn.esprit.docsbackend.entities.enums.RecurrenceType;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class AvailabilitySessionRequest {
 
-    @NotNull
+    // date range
     private LocalDate startDate;
+    private LocalDate endDate;          // can be null → default to startDate
 
-    /**
-     * Optional; if null → only startDate.
-     * For WEEKLY recurrence, this is the end of the period.
-     */
-    private LocalDate endDate;
-
-    @NotNull
+    // time range
     private LocalTime startTime;
-
-    @NotNull
     private LocalTime endTime;
 
-    @NotNull
-    @Min(5)
+    // slot duration (minutes)
     private Integer slotDurationMinutes;
 
-    @NotNull
-    private RecurrenceType recurrenceType;
+    // NEW: recurrence mode
+    private RecurrenceType recurrenceType;   // ONE_TIME or WEEKLY
+
+    // NEW: days of week for WEEKLY
+    // JSON from Android: ["MONDAY","WEDNESDAY",...]
+    private List<DayOfWeek> daysOfWeek;
 }
