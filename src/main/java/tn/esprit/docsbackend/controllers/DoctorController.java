@@ -51,7 +51,7 @@ public class DoctorController {
         doctorService.removePatientFromCurrentDoctor(patientUserId);
     }
 
-    @PostMapping("/me/practice-setup")
+    @PutMapping("/me/practice-setup")
     public DoctorProfileDto setupPracticeForCurrentDoctor(
             @RequestBody DoctorPracticeSetupRequest request
     ) {
@@ -60,6 +60,7 @@ public class DoctorController {
                 request.getActIds()
         );
     }
+
 
     // ---------------- new public/search endpoints ----------------
 
