@@ -5,11 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import tn.esprit.docsbackend.entities.enums.Role;
 import tn.esprit.docsbackend.entities.enums.UserStatus;
 
@@ -20,6 +16,7 @@ import tn.esprit.docsbackend.entities.enums.UserStatus;
 @Builder
 @Entity
 @Table(name = "users")
+@ToString
 public class User extends BaseEntity {
 
     @Column(name = "firstname", nullable = false, length = 50)

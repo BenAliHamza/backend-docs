@@ -37,6 +37,7 @@
 ./src/main/java/tn/esprit/docsbackend/dto/doctor
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/SpecialtyDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/ActDto.java
+./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPracticeSetupRequest.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileUpdateRequest.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/user

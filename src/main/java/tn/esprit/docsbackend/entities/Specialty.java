@@ -1,11 +1,7 @@
 package tn.esprit.docsbackend.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +13,8 @@ import java.util.Set;
 @Builder
 @Entity
 @Table(name = "specialties")
+@ToString
+
 public class Specialty extends BaseEntity {
 
     @Column(name = "code", length = 50)
