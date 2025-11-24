@@ -4,14 +4,19 @@ package tn.esprit.docsbackend.repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import tn.esprit.docsbackend.entities.AppointmentSlot;
 import tn.esprit.docsbackend.entities.DoctorProfile;
-import tn.esprit.docsbackend.entities.PatientProfile;
 import tn.esprit.docsbackend.entities.enums.SlotStatus;
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot, Long> {
+
+    List<AppointmentSlot> findByDoctorProfileAndStartDateTimeBetween(
+            DoctorProfile doctorProfile,
+            LocalDateTime from,
+            LocalDateTime to
+    );
 
     List<AppointmentSlot> findByDoctorProfileAndStartDateTimeBetweenAndStatus(
             DoctorProfile doctorProfile,
@@ -20,16 +25,9 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
             SlotStatus status
     );
 
-    List<AppointmentSlot> findByDoctorProfileAndStartDateTimeBetween(
-            DoctorProfile doctorProfile,
-            LocalDateTime from,
-            LocalDateTime to
-    );
+    // 🔹 NEW: used to remove old non-booked slots when doctor changes availability
+   List<AppointmentSlot> findByDoctorProfileAndStatusNot(DoctorProfile doctorProfile, SlotStatus status);
 
-    List<AppointmentSlot> findByPatientProfileAndStartDateTimeAfter(
-            PatientProfile patientProfile,
-            LocalDateTime after
-    );
-
-    Optional<AppointmentSlot> findByIdAndStatus(Long id, SlotStatus status);
+    Optional<AppointmentSlot> findByIdAndStatus(Long id, SlotStatus status);  // <-- ADD THIS
 }
+

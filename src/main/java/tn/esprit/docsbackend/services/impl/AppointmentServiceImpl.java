@@ -13,10 +13,14 @@ import tn.esprit.docsbackend.entities.*;
 import tn.esprit.docsbackend.entities.enums.RecurrenceType;
 import tn.esprit.docsbackend.entities.enums.Role;
 import tn.esprit.docsbackend.entities.enums.SlotStatus;
-import tn.esprit.docsbackend.repositories.*;
+import tn.esprit.docsbackend.repositories.AppointmentSlotRepository;
+import tn.esprit.docsbackend.repositories.AvailabilitySessionRepository;
+import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
+import tn.esprit.docsbackend.repositories.PatientProfileRepository;
 import tn.esprit.docsbackend.services.AppointmentService;
 import tn.esprit.docsbackend.utils.SecurityUtils;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -43,9 +47,15 @@ public class AppointmentServiceImpl implements AppointmentService {
         LocalTime startTime = request.getStartTime();
         LocalTime endTime = request.getEndTime();
 
+        if (startDate == null || startTime == null || endTime == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing start/end date or time");
+        }
+
         if (!endTime.isAfter(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
         }
+
+        clearNonBookedSlotsForDoctorAndRange(doctorProfile, startDate, endDate);
 
         AvailabilitySession session = AvailabilitySession.builder()
                 .doctorProfile(doctorProfile)
@@ -55,6 +65,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .endTime(endTime)
                 .slotDurationMinutes(request.getSlotDurationMinutes())
                 .recurrenceType(request.getRecurrenceType())
+                .daysOfWeek(request.getDaysOfWeek())
                 .build();
 
         availabilitySessionRepository.save(session);
@@ -115,9 +126,30 @@ public class AppointmentServiceImpl implements AppointmentService {
         slot.setPatientProfile(patientProfile);
         appointmentSlotRepository.save(slot);
 
-        // TODO: send email + in-app notification here
-
         return toSlotDto(slot);
+    }
+
+    private void clearNonBookedSlotsForDoctorAndRange(DoctorProfile doctorProfile,
+                                                      LocalDate startDate,
+                                                      LocalDate endDate) {
+
+        LocalDateTime fromDt = startDate.atStartOfDay();
+        LocalDateTime toDt = endDate.plusDays(1).atStartOfDay();
+
+        List<AppointmentSlot> existing = appointmentSlotRepository
+                .findByDoctorProfileAndStartDateTimeBetween(doctorProfile, fromDt, toDt);
+
+        if (existing == null || existing.isEmpty()) {
+            return;
+        }
+
+        List<AppointmentSlot> toDelete = existing.stream()
+                .filter(slot -> slot.getStatus() != SlotStatus.BOOKED)
+                .toList();
+
+        if (!toDelete.isEmpty()) {
+            appointmentSlotRepository.deleteAll(toDelete);
+        }
     }
 
     private int generateSlotsForSession(AvailabilitySession session) {
@@ -125,42 +157,49 @@ public class AppointmentServiceImpl implements AppointmentService {
         LocalDate endDate = session.getEndDate() != null ? session.getEndDate() : startDate;
         int durationMinutes = session.getSlotDurationMinutes();
 
+        if (durationMinutes <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "slotDurationMinutes must be > 0");
+        }
+
+        List<DayOfWeek> selectedDays = session.getDaysOfWeek();
+        boolean hasDaysFilter = selectedDays != null && !selectedDays.isEmpty();
+
         List<AppointmentSlot> toSave = new ArrayList<>();
 
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
-            LocalTime t = session.getStartTime();
-            while (t.isBefore(session.getEndTime())) {
-                LocalDateTime slotStart = LocalDateTime.of(current, t);
-                LocalDateTime slotEnd = slotStart.plusMinutes(durationMinutes);
 
-                if (slotEnd.isAfter(LocalDateTime.of(current, session.getEndTime()))) {
-                    break;
-                }
+            boolean shouldGenerate = !hasDaysFilter || selectedDays.contains(current.getDayOfWeek());
 
-                if (slotEnd.isBefore(LocalDateTime.now())) {
+            if (shouldGenerate) {
+                LocalTime t = session.getStartTime();
+                while (t.isBefore(session.getEndTime())) {
+                    LocalDateTime slotStart = LocalDateTime.of(current, t);
+                    LocalDateTime slotEnd = slotStart.plusMinutes(durationMinutes);
+
+                    if (slotEnd.isAfter(LocalDateTime.of(current, session.getEndTime()))) {
+                        break;
+                    }
+
+                    if (slotEnd.isBefore(LocalDateTime.now())) {
+                        t = t.plusMinutes(durationMinutes);
+                        continue;
+                    }
+
+                    AppointmentSlot slot = AppointmentSlot.builder()
+                            .doctorProfile(session.getDoctorProfile())
+                            .availabilitySession(session)
+                            .startDateTime(slotStart)
+                            .endDateTime(slotEnd)
+                            .status(SlotStatus.AVAILABLE)
+                            .build();
+
+                    toSave.add(slot);
                     t = t.plusMinutes(durationMinutes);
-                    continue;
                 }
-
-                AppointmentSlot slot = AppointmentSlot.builder()
-                        .doctorProfile(session.getDoctorProfile())
-                        .availabilitySession(session)
-                        .startDateTime(slotStart)
-                        .endDateTime(slotEnd)
-                        .status(SlotStatus.AVAILABLE)
-                        .build();
-
-                toSave.add(slot);
-
-                t = t.plusMinutes(durationMinutes);
             }
 
-            if (session.getRecurrenceType() == RecurrenceType.WEEKLY) {
-                current = current.plusWeeks(1);
-            } else {
-                break;
-            }
+            current = current.plusDays(1);
         }
 
         appointmentSlotRepository.saveAll(toSave);
@@ -169,8 +208,10 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private List<SlotDto> toSlotDtos(List<AppointmentSlot> slots) {
         List<SlotDto> result = new ArrayList<>();
-        for (AppointmentSlot slot : slots) {
-            result.add(toSlotDto(slot));
+        if (slots != null) {
+            for (AppointmentSlot slot : slots) {
+                result.add(toSlotDto(slot));
+            }
         }
         return result;
     }

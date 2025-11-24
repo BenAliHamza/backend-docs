@@ -9,5 +9,5 @@ import java.util.List;
 
 public interface AvailabilitySessionRepository extends JpaRepository<AvailabilitySession, Long> {
 
-    List<AvailabilitySession> findByDoctorProfileAndDeletedFalse(DoctorProfile doctorProfile);
+    List<AvailabilitySession> findByDoctorProfile(DoctorProfile doctorProfile);
 }
