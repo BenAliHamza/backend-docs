@@ -5,12 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import tn.esprit.docsbackend.repositories.UserRepository;
-import tn.esprit.docsbackend.utils.seed.DoctorActSeeder;
-import tn.esprit.docsbackend.utils.seed.DoctorDataSeeder;
-import tn.esprit.docsbackend.utils.seed.DoctorPatientRelationSeeder;
-import tn.esprit.docsbackend.utils.seed.DoctorSpecialtySeeder;
-import tn.esprit.docsbackend.utils.seed.PatientDataSeeder;
-import tn.esprit.docsbackend.utils.seed.SpecialtyDataSeeder;
+import tn.esprit.docsbackend.utils.seed.*;
 
 @Slf4j
 @Component
@@ -24,6 +19,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final SpecialtyDataSeeder specialtyDataSeeder;
     private final DoctorSpecialtySeeder doctorSpecialtySeeder;
     private final DoctorActSeeder doctorActSeeder;
+    private final IndicatorTypeDataSeeder indicatorTypeDataSeeder;
 
     @Override
     public void run(String... args) {
@@ -49,6 +45,7 @@ public class DemoDataInitializer implements CommandLineRunner {
 
         log.info("DemoDataInitializer: seeding doctor acts based on specialties...");
         doctorActSeeder.seed();
+        indicatorTypeDataSeeder.seed();
 
         log.info("DemoDataInitializer: demo data seeding finished.");
     }

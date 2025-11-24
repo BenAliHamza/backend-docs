@@ -38,7 +38,9 @@ public class SecurityConfig {
                                 "/auth/signup",
                                 "/auth/login",
                                 "/auth/refresh",
-                                "/api/specialties/**"
+                                "/api/specialties/**",
+                                "/indicator-types" ,
+                                "/indicators/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/doctors/search", "/api/doctors/*/public").permitAll()
                         // Swagger / Actuator can be opened later if needed
