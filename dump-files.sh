@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === Static configuration ===
-DIR="./src/main/java/tn/esprit/docsbackend/dto/doctor"  # relative directory
+DIR="./src/main/java/tn/esprit/docsbackend/entities"  # relative directory
 OUT="./all-files-content.txt"                           # output file
 
 # Empty or create output file

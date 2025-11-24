@@ -38,10 +38,14 @@
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/SpecialtyDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/ActDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPracticeSetupRequest.java
+./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPublicProfileDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileUpdateRequest.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileDto.java
+./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorSearchResultDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/user
+./src/main/java/tn/esprit/docsbackend/dto/user/ChangePasswordRequest.java
 ./src/main/java/tn/esprit/docsbackend/dto/user/UserDto.java
+./src/main/java/tn/esprit/docsbackend/dto/user/UserUpdateRequest.java
 ./src/main/java/tn/esprit/docsbackend/dto/common
 ./src/main/java/tn/esprit/docsbackend/dto/common/ApiErrorResponse.java
 ./src/main/java/tn/esprit/docsbackend/dto/common/ListResponse.java
@@ -51,6 +55,7 @@
 ./src/main/java/tn/esprit/docsbackend/.DS_Store
 ./src/main/java/tn/esprit/docsbackend/config
 ./src/main/java/tn/esprit/docsbackend/config/SecurityConfig.java
+./src/main/java/tn/esprit/docsbackend/config/RequestLoggingFilter.java
 ./src/main/java/tn/esprit/docsbackend/config/DemoDataInitializer.java
 ./src/main/java/tn/esprit/docsbackend/config/ImageStorageConfig.java
 ./src/main/java/tn/esprit/docsbackend/config/ImageStorageProperties.java
