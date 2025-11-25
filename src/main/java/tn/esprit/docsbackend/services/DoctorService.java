@@ -27,6 +27,11 @@ public interface DoctorService {
     List<PatientProfileDto> getPatientsOfCurrentDoctor();
 
     /**
+     * Get a single patient (by their User.id) linked to the currently authenticated doctor.
+     */
+    PatientProfileDto getPatientOfCurrentDoctor(Long patientUserId);
+
+    /**
      * Link a patient (by their user id) to the currently authenticated doctor.
      */
     void addPatientToCurrentDoctor(Long patientUserId);

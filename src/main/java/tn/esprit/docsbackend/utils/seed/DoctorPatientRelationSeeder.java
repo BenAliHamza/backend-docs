@@ -6,12 +6,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.docsbackend.entities.DoctorProfile;
 import tn.esprit.docsbackend.entities.PatientProfile;
-import tn.esprit.docsbackend.entities.User;
 import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
 import tn.esprit.docsbackend.repositories.PatientProfileRepository;
 import tn.esprit.docsbackend.repositories.UserRepository;
+import tn.esprit.docsbackend.entities.User;
 
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -22,63 +23,67 @@ public class DoctorPatientRelationSeeder implements DataSeeder {
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
 
+    private final Random random = new Random();
+
     @Override
     @Transactional
     public void seed() {
         log.info("DoctorPatientRelationSeeder: starting to link demo doctors and patients...");
 
-        for (int doctorIndex = 1; doctorIndex <= SeedConstants.DOCTOR_COUNT; doctorIndex++) {
-            String doctorEmail = "doctor" + doctorIndex + "@example.com";
+        // Get all non-deleted patient profiles
+        List<PatientProfile> allPatients = patientProfileRepository.findAll().stream()
+                .filter(p -> !p.isDeleted())
+                .collect(Collectors.toList());
 
-            Optional<User> doctorUserOpt = userRepository.findByEmailAndDeletedFalse(doctorEmail);
-            if (doctorUserOpt.isEmpty()) {
-                log.debug("DoctorPatientRelationSeeder: doctor user {} not found, skipping.", doctorEmail);
+        if (allPatients.isEmpty()) {
+            log.warn("DoctorPatientRelationSeeder: no patient profiles found, skipping.");
+            return;
+        }
+
+        List<DoctorProfile> doctors = doctorProfileRepository.findAll();
+        if (doctors.isEmpty()) {
+            log.warn("DoctorPatientRelationSeeder: no doctor profiles found, skipping.");
+            return;
+        }
+
+        for (DoctorProfile doctorProfile : doctors) {
+            if (doctorProfile.isDeleted()) {
                 continue;
             }
 
-            User doctorUser = doctorUserOpt.get();
-            Optional<DoctorProfile> doctorProfileOpt =
-                    doctorProfileRepository.findByUserIdAndDeletedFalse(doctorUser.getId());
+            User doctorUser = doctorProfile.getUser();
+            String doctorEmail = doctorUser != null ? doctorUser.getEmail() : "unknown";
+            log.debug("DoctorPatientRelationSeeder: processing doctor {}", doctorEmail);
 
-            if (doctorProfileOpt.isEmpty()) {
-                log.debug("DoctorPatientRelationSeeder: doctor profile for {} not found, skipping.", doctorEmail);
+            Set<PatientProfile> currentPatients =
+                    doctorProfile.getPatients() != null
+                            ? new HashSet<>(doctorProfile.getPatients())
+                            : new HashSet<>();
+
+            // If doctor already has enough patients, keep it as is (idempotent behavior)
+            if (currentPatients.size() >= SeedConstants.PATIENTS_PER_DOCTOR) {
+                log.debug("DoctorPatientRelationSeeder: doctor {} already has {} patients, skipping.",
+                        doctorEmail, currentPatients.size());
                 continue;
             }
 
-            DoctorProfile doctorProfile = doctorProfileOpt.get();
+            int targetCount = SeedConstants.PATIENTS_PER_DOCTOR;
+            int attempts = 0;
+            int maxAttempts = allPatients.size() * 2;
 
-            // For each doctor, assign PATIENTS_PER_DOCTOR patients using a rolling pattern
-            for (int offset = 0; offset < SeedConstants.PATIENTS_PER_DOCTOR; offset++) {
-                int patientIndex = ((doctorIndex - 1) * SeedConstants.PATIENTS_PER_DOCTOR + offset)
-                        % SeedConstants.PATIENT_COUNT + 1;
-
-                String patientEmail = "patient" + patientIndex + "@example.com";
-
-                Optional<User> patientUserOpt = userRepository.findByEmailAndDeletedFalse(patientEmail);
-                if (patientUserOpt.isEmpty()) {
-                    log.debug("DoctorPatientRelationSeeder: patient user {} not found, skipping.", patientEmail);
-                    continue;
-                }
-
-                User patientUser = patientUserOpt.get();
-                Optional<PatientProfile> patientProfileOpt =
-                        patientProfileRepository.findByUserIdAndDeletedFalse(patientUser.getId());
-
-                if (patientProfileOpt.isEmpty()) {
-                    log.debug("DoctorPatientRelationSeeder: patient profile for {} not found, skipping.", patientEmail);
-                    continue;
-                }
-
-                PatientProfile patientProfile = patientProfileOpt.get();
-
-                // Set relationship on owning side (DoctorProfile.patients)
-                doctorProfile.getPatients().add(patientProfile);
-
-                // For in-memory consistency (not required for DB persistence)
-                patientProfile.getDoctors().add(doctorProfile);
+            while (currentPatients.size() < targetCount && attempts < maxAttempts) {
+                PatientProfile randomPatient = allPatients.get(random.nextInt(allPatients.size()));
+                currentPatients.add(randomPatient);
+                // maintain bidirectional relationship
+                randomPatient.getDoctors().add(doctorProfile);
+                attempts++;
             }
 
+            doctorProfile.setPatients(currentPatients);
             doctorProfileRepository.save(doctorProfile);
+
+            log.debug("DoctorPatientRelationSeeder: doctor {} now linked to {} patients.",
+                    doctorEmail, currentPatients.size());
         }
 
         log.info("DoctorPatientRelationSeeder: linking completed.");

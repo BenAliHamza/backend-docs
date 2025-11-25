@@ -11,6 +11,7 @@ import tn.esprit.docsbackend.repositories.SpecialtyRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @Slf4j
 @Component
@@ -19,6 +20,7 @@ public class DoctorSpecialtySeeder implements DataSeeder {
 
     private final DoctorProfileRepository doctorProfileRepository;
     private final SpecialtyRepository specialtyRepository;
+    private final Random random = new Random();
 
     @Override
     @Transactional
@@ -32,21 +34,18 @@ public class DoctorSpecialtySeeder implements DataSeeder {
         List<DoctorProfile> doctors = doctorProfileRepository.findAll();
         log.info("DoctorSpecialtySeeder: assigning specialties to {} doctors...", doctors.size());
 
-        for (int i = 0; i < doctors.size(); i++) {
-            DoctorProfile doctor = doctors.get(i);
-
+        for (DoctorProfile doctor : doctors) {
             if (doctor.isDeleted()) {
                 continue;
             }
 
-            // If doctor already has a specialty, skip to keep seeding idempotent.
+            // Idempotency: if doctor already has a specialty, skip
             if (doctor.getSpecialty() != null) {
                 continue;
             }
 
-            int index = i % allSpecialties.size();
-            Specialty specialty = allSpecialties.get(index);
-            doctor.setSpecialty(specialty);
+            Specialty randomSpecialty = allSpecialties.get(random.nextInt(allSpecialties.size()));
+            doctor.setSpecialty(randomSpecialty);
         }
 
         doctorProfileRepository.saveAll(doctors);

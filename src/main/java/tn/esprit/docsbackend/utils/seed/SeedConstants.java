@@ -8,12 +8,14 @@ public final class SeedConstants {
 
     public static final String DEFAULT_PASSWORD = "123123";
 
-    public static final int PATIENT_COUNT = 20;
+    // 👉 50 patients and 50 doctors
+    public static final int PATIENT_COUNT = 50;
 
-    public static final int DOCTOR_COUNT = 20;
+    public static final int DOCTOR_COUNT = 50;
 
     /**
-     * How many patients each doctor will be linked to in demo data.
+     * How many patients each doctor will be linked to in demo data
+     * (at least this number).
      */
     public static final int PATIENTS_PER_DOCTOR = 5;
 }

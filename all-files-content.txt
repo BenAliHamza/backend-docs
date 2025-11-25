@@ -1,507 +1,742 @@
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/RefreshToken.java =====
-package tn.esprit.docsbackend.entities;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/indicator/IndicatorTypeDto.java =====
+package tn.esprit.docsbackend.dto.indicator;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.*;
+import lombok.Data;
 
+@Data
+public class IndicatorTypeDto {
+    private Long id;
+    private String code;
+    private String name;
+    private String unit;
+    private String description;
+    private Boolean active;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/indicator/PatientIndicatorCreateRequest.java =====
+package tn.esprit.docsbackend.dto.indicator;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Entity
-@ToString
-@Table(name = "refresh_tokens")
-public class RefreshToken extends BaseEntity {
+/**
+ * Request body when a patient records a new measurement.
+ */
+@Data
+public class PatientIndicatorCreateRequest {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Long indicatorTypeId;          // required
+
+    private BigDecimal numericValue;       // at least one of numeric/text must be provided
+    private String textValue;
 
     /**
-     * The raw token value or a hash of it.
-     * Should be long and random enough for security.
+     * Optional custom timestamp. If null, backend will use now().
      */
-    @Column(name = "token", nullable = false, unique = true, length = 255)
-    private String token;
+    private LocalDateTime measuredAt;
 
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
-
-    @Column(name = "revoked", nullable = false)
-    private boolean revoked = false;
+    private String note;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/enums/UserStatus.java =====
-package tn.esprit.docsbackend.entities.enums;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/indicator/PatientIndicatorDto.java =====
+package tn.esprit.docsbackend.dto.indicator;
 
-public enum UserStatus {
-    ACTIVE,
-    INACTIVE,
-    PENDING,
-    BLOCKED
-}
+import lombok.Data;
 
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/enums/Role.java =====
-package tn.esprit.docsbackend.entities.enums;
-
-public enum Role {
-    ADMIN,
-    DOCTOR,
-    PATIENT
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/BaseEntity.java =====
-package tn.esprit.docsbackend.entities;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@ToString
-@MappedSuperclass
-public abstract class BaseEntity {
+@Data
+public class PatientIndicatorDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Identifier of the creator (e.g. user id or email).
-     * Can be null for system-created records.
-     */
-    @Column(name = "created_by", length = 100)
-    private String createdBy;
+    private Long indicatorTypeId;
+    private String indicatorCode;
+    private String indicatorName;
+    private String unit;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private BigDecimal numericValue;
+    private String textValue;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime measuredAt;
 
-    /**
-     * Soft delete flag. Use this instead of physical delete.
-     */
-    @Column(name = "deleted", nullable = false)
-    private boolean deleted = false;
-
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        if (createdAt == null) {
-            createdAt = now;
-        }
-        if (updatedAt == null) {
-            updatedAt = now;
-        }
-        // Ensure deleted is never null-like
-        deleted = deleted;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    private String note;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/User.java =====
-package tn.esprit.docsbackend.entities;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/SignupRequest.java =====
+package tn.esprit.docsbackend.dto.auth;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import lombok.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import tn.esprit.docsbackend.entities.enums.Role;
-import tn.esprit.docsbackend.entities.enums.UserStatus;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Entity
-@Table(name = "users")
-@ToString
-public class User extends BaseEntity {
+public class SignupRequest {
 
-    @Column(name = "firstname", nullable = false, length = 50)
+    @NotBlank
+    @Size(max = 50)
     private String firstname;
 
-    @Column(name = "lastname", nullable = false, length = 50)
+    @NotBlank
+    @Size(max = 50)
     private String lastname;
 
-    @Column(name = "email", nullable = false, unique = true, length = 120)
+    @NotBlank
+    @Email
+    @Size(max = 120)
     private String email;
 
-    @Column(name = "phone", length = 20)
+    @Size(max = 20)
     private String phone;
 
-    /**
-     * URL or path to the profile image.
-     */
-    @Column(name = "profile_image", length = 255)
-    private String profileImage;
-
-    @Column(name = "is_first_login", nullable = false)
-    private Boolean isFirstLogin = true;
-
-    /**
-     * Hashed password (BCrypt).
-     */
-    @Column(name = "password", nullable = false, length = 255)
+    @NotBlank
+    @Size(min = 6, max = 100)
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 20)
+    /**
+     * Role to create: DOCTOR or PATIENT.
+     * ADMIN users should be created via admin flows, not public signup.
+     */
+    @NotNull
     private Role role;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private UserStatus status;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/PatientProfile.java =====
-package tn.esprit.docsbackend.entities;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/LoginRequest.java =====
+package tn.esprit.docsbackend.dto.auth;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
-import lombok.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+@Getter
+@Setter
+public class LoginRequest {
 
+    @NotBlank
+    @Email
+    @Size(max = 120)
+    private String email;
+
+    @NotBlank
+    @Size(min = 6, max = 100)
+    private String password;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/TokenResponse.java =====
+package tn.esprit.docsbackend.dto.auth;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * Response carrying access and refresh tokens.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
-@Entity
-@Table(name = "patient_profiles")
-public class PatientProfile extends BaseEntity {
+public class TokenResponse {
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    private String accessToken;
 
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
-
-    @Column(name = "gender", length = 20)
-    private String gender;
-
-    @Column(name = "blood_type", length = 10)
-    private String bloodType;
-
-    @Column(name = "height_cm")
-    private Integer heightCm;
-
-    @Column(name = "weight_kg")
-    private Integer weightKg;
+    private String refreshToken;
 
     /**
-     * Address information for the patient.
+     * Usually "Bearer".
      */
-    @Column(name = "address", length = 255)
-    private String address;
-
-    @Column(name = "city", length = 100)
-    private String city;
-
-    @Column(name = "country", length = 100)
-    private String country;
-
-    /**
-     * Optional marital status (single, married, etc.).
-     */
-    @Column(name = "marital_status", length = 30)
-    private String maritalStatus;
-
-    /**
-     * Lifestyle flags.
-     */
-    @Column(name = "smoker")
-    private Boolean smoker;
-
-    @Column(name = "alcohol_use")
-    private Boolean alcoholUse;
-
-    /**
-     * Free-form notes / summary for clinicians.
-     */
-    @Column(name = "notes", length = 1000)
-    private String notes;
-
-    /**
-     * Many-to-many relationship between patients and doctors.
-     * This side is the inverse of DoctorProfile.patients.
-     */
-    @ManyToMany(mappedBy = "patients")
     @Builder.Default
-    private Set<DoctorProfile> doctors = new HashSet<>();
+    private String tokenType = "Bearer";
+
+    /**
+     * Access token validity in seconds (optional, for client UX).
+     */
+    private Long expiresIn;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/Act.java =====
-package tn.esprit.docsbackend.entities;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/RefreshTokenRequest.java =====
+package tn.esprit.docsbackend.dto.auth;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.*;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class RefreshTokenRequest {
+
+    @NotBlank
+    private String refreshToken;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/SpecialtyDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+public class SpecialtyDto {
+
+    private Long id;
+
+    private String code;
+
+    private String name;
+
+    private String description;
+
+    private Boolean active;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/ActDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-@ToString
-@Entity
-@Table(name = "acts")
-public class Act extends BaseEntity {
+public class ActDto {
 
-    /**
-     * Owning doctor of this act.
-     */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "doctor_id", nullable = false)
-    private DoctorProfile doctor;
+    private Long id;
 
-    /**
-     * Specialty this act is associated with.
-     * This lets us filter acts by specialty during onboarding.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "specialty_id")
-    private Specialty specialty;
-
-    @Column(name = "code", length = 50)
     private String code;
 
-    @Column(name = "name", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "description", length = 1000)
     private String description;
 
-    /**
-     * Base price for this act. May override the doctor's generic consultation fee.
-     */
-    @Column(name = "base_price", precision = 10, scale = 2)
     private BigDecimal basePrice;
 
-    /**
-     * Typical duration of this act in minutes.
-     */
-    @Column(name = "default_duration_min")
     private Integer defaultDurationMinutes;
 
-    /**
-     * Whether this act can be done via teleconsultation.
-     */
-    @Column(name = "teleconsultation_available")
     private Boolean teleconsultationAvailable;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/Specialty.java =====
-package tn.esprit.docsbackend.entities;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPracticeSetupRequest.java =====
+package tn.esprit.docsbackend.dto.doctor;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
+/**
+ * Request body for doctor onboarding step where they choose
+ * their main specialty and the acts they perform.
+ */
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Entity
-@Table(name = "specialties")
-@ToString
+public class DoctorPracticeSetupRequest {
 
-public class Specialty extends BaseEntity {
+    @NotNull
+    private Long specialtyId;
 
-    @Column(name = "code", length = 50)
-    private String code;
-
-    @Column(name = "name", nullable = false, length = 150)
-    private String name;
-
-    @Column(name = "description", length = 1000)
-    private String description;
-
-    @Column(name = "active", nullable = false)
-    @Builder.Default
-    private Boolean active = true;
-
-    /**
-     * One-to-many relationship with doctors: each doctor has one specialty.
-     */
-    @OneToMany(mappedBy = "specialty")
-    @Builder.Default
-    private Set<DoctorProfile> doctors = new HashSet<>();
+    @NotEmpty
+    private List<Long> actIds;
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/entities/DoctorProfile.java =====
-package tn.esprit.docsbackend.entities;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPublicProfileDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
+/**
+ * Public-facing doctor profile for patients/search.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
-@Entity
-@Table(name = "doctor_profiles")
-public class DoctorProfile extends BaseEntity {
+public class DoctorPublicProfileDto {
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    private Long doctorId;
+    private Long userId;
 
-    @Column(name = "bio", length = 1000)
+    // Basic identity
+    private String firstName;
+    private String lastName;
+    private String profileImageUrl;
+
+    // Professional info
+    private String specialtyName;
+    private Long specialtyId;
+    private String city;
+    private String country;
+    private String clinicAddress;
+    private String bio;
+    private Integer yearsOfExperience;
+    private BigDecimal consultationFee;
+    private Boolean acceptingNewPatients;
+    private Boolean teleconsultationEnabled;
+
+    // Acts
+    private List<ActDto> acts; // reuse existing dto.doctor.ActDto
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileUpdateRequest.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+public class DoctorProfileUpdateRequest {
+
+    @Size(max = 1000)
     private String bio;
 
-    @Column(name = "years_of_experience")
     private Integer yearsOfExperience;
 
-    /**
-     * Primary clinic address for this doctor.
-     */
-    @Column(name = "clinic_address", length = 255)
+    @Size(max = 255)
     private String clinicAddress;
 
-    /**
-     * City where the doctor mainly practices.
-     */
-    @Column(name = "city", length = 100)
+    @Size(max = 100)
     private String city;
 
-    /**
-     * Country where the doctor mainly practices.
-     */
-    @Column(name = "country", length = 100)
+    @Size(max = 100)
     private String country;
 
-    /**
-     * Medical registration number / license number.
-     */
-    @Column(name = "medical_registration_number", length = 100)
+    @Size(max = 100)
     private String medicalRegistrationNumber;
 
-    /**
-     * Base consultation fee used when no act-specific fee is provided.
-     */
-    @Column(name = "consultation_fee", precision = 10, scale = 2)
     private BigDecimal consultationFee;
 
     /**
      * Whether this doctor currently accepts new patients.
      */
-    @Column(name = "accepts_new_patients")
     private Boolean acceptsNewPatients;
 
     /**
      * Whether the doctor offers teleconsultation / remote visits.
      */
-    @Column(name = "teleconsultation_enabled")
     private Boolean teleconsultationEnabled;
 
     /**
      * Soft limit for how many appointments per day this doctor usually takes.
      */
-    @Column(name = "max_daily_appointments")
     private Integer maxDailyAppointments;
 
     /**
      * Default consultation duration in minutes.
      */
-    @Column(name = "avg_consultation_duration_min")
+    private Integer averageConsultationDurationMinutes;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Getter
+@Setter
+@Builder
+public class DoctorProfileDto {
+
+    private Long id;
+
+    private Long userId;
+
+    private String firstname;
+
+    private String lastname;
+
+    private String email;
+
+    private String phone;
+
+    private String bio;
+
+    private Integer yearsOfExperience;
+
+    private String clinicAddress;
+
+    private String city;
+
+    private String country;
+
+    private String medicalRegistrationNumber;
+
+    private BigDecimal consultationFee;
+
+    private Boolean acceptsNewPatients;
+
+    private Boolean teleconsultationEnabled;
+
+    private Integer maxDailyAppointments;
+
     private Integer averageConsultationDurationMinutes;
 
     /**
-     * Many-to-many relationship between doctors and patients.
-     * This side owns the join table.
+     * Single main specialty of this doctor.
      */
-    @ManyToMany
-    @JoinTable(
-            name = "doctor_patient_links",
-            joinColumns = @JoinColumn(name = "doctor_id"),
-            inverseJoinColumns = @JoinColumn(name = "patient_id")
-    )
-    @Builder.Default
-    private Set<PatientProfile> patients = new HashSet<>();
+    private SpecialtyDto specialty;
 
     /**
-     * Each doctor has exactly one main specialty.
+     * Acts/services this doctor offers.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "specialty_id")
-    private Specialty specialty;
+    private List<ActDto> acts;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorSearchResultDto.java =====
+package tn.esprit.docsbackend.dto.doctor;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * Lightweight doctor row used in /api/doctors/search result list.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DoctorSearchResultDto {
+
+    // You can treat this as the doctor profile id
+    private Long doctorId;
+
+    // Linked User id (for auth, images, etc.)
+    private Long userId;
+
+    private String firstName;
+    private String lastName;
+
+    private String specialtyName;
+    private Long specialtyId;
+
+    private String city;
+    private String country;
+
+    private String profileImageUrl;   // from User.profileImage
+
+    private Boolean teleconsultationEnabled;
+    private Boolean acceptingNewPatients;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/ChangePasswordRequest.java =====
+package tn.esprit.docsbackend.dto.user;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Request to change the password of the currently authenticated user.
+ */
+@Getter
+@Setter
+public class ChangePasswordRequest {
+
+    @NotBlank
+    private String oldPassword;
+
+    @NotBlank
+    @Size(min = 6, max = 100)
+    private String newPassword;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/UserDto.java =====
+package tn.esprit.docsbackend.dto.user;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import tn.esprit.docsbackend.entities.enums.Role;
+import tn.esprit.docsbackend.entities.enums.UserStatus;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@Builder
+public class UserDto {
+
+    private Long id;
+
+    private String firstname;
+
+    private String lastname;
+
+    private String email;
+
+    private String phone;
+
+    private String profileImage;
+
+    private Boolean isFirstLogin;
+
+    private Role role;
+
+    private UserStatus status;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/UserUpdateRequest.java =====
+package tn.esprit.docsbackend.dto.user;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Partial update for the base User fields.
+ * All fields are optional; only non-null ones are applied.
+ */
+@Getter
+@Setter
+public class UserUpdateRequest {
+
+    @Size(max = 50)
+    private String firstname;
+
+    @Size(max = 50)
+    private String lastname;
+
+    @Size(max = 20)
+    private String phone;
 
     /**
-     * One-to-many relationship between a doctor and their acts.
+     * Optional email update. If provided and different, we check uniqueness.
      */
-    @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<Act> acts = new HashSet<>();
+    @Email
+    @Size(max = 120)
+    private String email;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/common/ApiErrorResponse.java =====
+package tn.esprit.docsbackend.dto.common;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Getter
+@Setter
+@Builder
+public class ApiErrorResponse {
+
+    private LocalDateTime timestamp;
+
+    private int status;
+
+    private String error;
+
+    private String message;
+
+    private String path;
+
+    /**
+     * Optional map of field -> validation error messages.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Map<String, List<String>> fieldErrors;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/common/ListResponse.java =====
+package tn.esprit.docsbackend.dto.common;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ListResponse<T> {
+
+    private List<T> items;
+
+    private long total;
+
+    /**
+     * Convenience factory: builds a ListResponse with total = items.size().
+     */
+    public static <T> ListResponse<T> of(List<T> items) {
+        long total = (items != null) ? items.size() : 0L;
+        return new ListResponse<>(items, total);
+    }
+
+    /**
+     * Optional overload if you ever want a custom total (e.g. for pagination).
+     */
+    public static <T> ListResponse<T> of(List<T> items, long total) {
+        return new ListResponse<>(items, total);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/patient/PatientProfileDto.java =====
+package tn.esprit.docsbackend.dto.patient;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
+@Getter
+@Setter
+@Builder
+public class PatientProfileDto {
+
+    private Long id;
+
+    private Long userId;
+
+    private String firstname;
+
+    private String lastname;
+
+    private String email;
+
+    private String phone;
+
+    private LocalDate dateOfBirth;
+
+    private String gender;
+
+    private String bloodType;
+
+    private Integer heightCm;
+
+    private Integer weightKg;
+
+    private String address;
+
+    private String city;
+
+    private String country;
+
+    private String maritalStatus;
+
+    private Boolean smoker;
+
+    private Boolean alcoholUse;
+
+    private String notes;
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/patient/PatientProfileUpdateRequest.java =====
+package tn.esprit.docsbackend.dto.patient;
+
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
+@Getter
+@Setter
+public class PatientProfileUpdateRequest {
+
+    private LocalDate dateOfBirth;
+
+    @Size(max = 20)
+    private String gender;
+
+    @Size(max = 10)
+    private String bloodType;
+
+    private Integer heightCm;
+
+    private Integer weightKg;
+
+    @Size(max = 255)
+    private String address;
+
+    @Size(max = 100)
+    private String city;
+
+    @Size(max = 100)
+    private String country;
+
+    @Size(max = 30)
+    private String maritalStatus;
+
+    private Boolean smoker;
+
+    private Boolean alcoholUse;
+
+    @Size(max = 1000)
+    private String notes;
 }
 
 

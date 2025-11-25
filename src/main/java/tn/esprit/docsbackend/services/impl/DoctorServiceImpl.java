@@ -106,6 +106,36 @@ public class DoctorServiceImpl implements DoctorService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns a single patient (by patient user id) linked to the currently authenticated doctor.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PatientProfileDto getPatientOfCurrentDoctor(Long patientUserId) {
+        if (patientUserId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "patientUserId is required");
+        }
+
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+
+        DoctorProfile doctorProfile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        PatientProfile patientProfile = patientProfileRepository
+                .findByUserIdAndDeletedFalse(patientUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
+
+        Set<PatientProfile> doctorPatients =
+                doctorProfile.getPatients() != null ? doctorProfile.getPatients() : new HashSet<>();
+
+        if (doctorPatients.isEmpty() || !doctorPatients.contains(patientProfile)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Doctor is not linked to this patient");
+        }
+
+        return patientProfileMapper.toDto(patientProfile);
+    }
+
     @Override
     @Transactional
     public void addPatientToCurrentDoctor(Long patientUserId) {
