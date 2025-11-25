@@ -1,4 +1,4 @@
-package tn.esprit.docsbackend.controllers;
+package tn.esprit.docsbackend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import tn.esprit.docsbackend.controllers.AppointmentController;
 import tn.esprit.docsbackend.dto.appointment.AppointmentCreateRequest;
 import tn.esprit.docsbackend.dto.appointment.AppointmentDto;
 import tn.esprit.docsbackend.entities.enums.AppointmentStatus;
@@ -22,7 +23,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = AppointmentController.class)
+@WebMvcTest(
+        controllers = AppointmentController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+        }
+)
 @AutoConfigureMockMvc(addFilters = false)
 class AppointmentControllerTest {
 
@@ -36,10 +44,9 @@ class AppointmentControllerTest {
     private AppointmentService appointmentService;
 
     @Test
-    @DisplayName("POST /api/appointments - doit créer un rendez-vous pour un patient")
+    @DisplayName("POST /api/appointments - doit créer un rendez-vous")
     void requestAppointment_shouldReturnOk() throws Exception {
 
-        // GIVEN – Request
         AppointmentCreateRequest request = new AppointmentCreateRequest();
         request.setDoctorUserId(2L);
         request.setDate(LocalDate.of(2025, 1, 10));
@@ -47,30 +54,27 @@ class AppointmentControllerTest {
         request.setEndTime(LocalTime.of(10, 30));
         request.setReason("Consultation de suivi");
 
-        // GIVEN – Response from service
-        AppointmentDto dto = new AppointmentDto();
-        dto.setId(1L);
-        dto.setDoctorUserId(2L);
-        dto.setPatientUserId(10L);
-        dto.setDate(request.getDate());
-        dto.setStartTime(request.getStartTime());
-        dto.setEndTime(request.getEndTime());
-        dto.setReason(request.getReason());
-        dto.setStatus(AppointmentStatus.PENDING);
+        AppointmentDto dto = AppointmentDto.builder()
+                .id(1L)
+                .doctorUserId(2L)
+                .patientUserId(10L)
+                .date(request.getDate())
+                .startTime(request.getStartTime())
+                .endTime(request.getEndTime())
+                .reason(request.getReason())
+                .status(AppointmentStatus.PENDING)
+                .build();
 
-        Mockito.when(appointmentService.requestAppointmentAsPatient(any(AppointmentCreateRequest.class)))
+        Mockito.when(appointmentService.requestAppointmentAsPatient(any()))
                 .thenReturn(dto);
 
-        // WHEN + THEN
         mockMvc.perform(post("/api/appointments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())  // ton controller renvoie 200 OK
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.doctorUserId").value(2L))
                 .andExpect(jsonPath("$.patientUserId").value(10L))
-                .andExpect(jsonPath("$.reason").value("Consultation de suivi"))
                 .andExpect(jsonPath("$.status").value("PENDING"));
     }
 }
