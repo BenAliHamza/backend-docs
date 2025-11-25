@@ -1,17 +1,19 @@
 package tn.esprit.docsbackend.dto.appointment;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import tn.esprit.docsbackend.entities.enums.AppointmentStatus;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Getter
 @Setter
 @Builder
-
+@NoArgsConstructor
+@AllArgsConstructor
 public class AppointmentDto {
 
     private Long id;

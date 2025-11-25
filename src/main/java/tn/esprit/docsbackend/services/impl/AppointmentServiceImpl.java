@@ -22,6 +22,7 @@ import tn.esprit.docsbackend.services.AppointmentService;
 import tn.esprit.docsbackend.utils.SecurityUtils;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -37,13 +38,16 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public AppointmentDto requestAppointmentAsPatient(AppointmentCreateRequest request) {
+        // 1) Vérifier que l’utilisateur courant est un PATIENT
         User currentPatientUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.PATIENT);
 
+        // 2) Charger le profil patient
         PatientProfile patientProfile = patientProfileRepository
                 .findByUserIdAndDeletedFalse(currentPatientUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Patient profile not found"));
 
+        // 3) Charger le user du docteur
         User doctorUser = userRepository.findById(request.getDoctorUserId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor user not found"));
@@ -53,18 +57,47 @@ public class AppointmentServiceImpl implements AppointmentService {
                     HttpStatus.BAD_REQUEST, "Target user is not a doctor");
         }
 
+        // 4) Charger le profil docteur
         DoctorProfile doctorProfile = doctorProfileRepository
                 .findByUserIdAndDeletedFalse(doctorUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Doctor profile not found"));
 
-        // TODO plus tard : vérifier les conflits d’horaires
+        // 5) Construire la période demandée
+        LocalDate date = request.getDate();
+        LocalTime start = request.getStartTime();
+        LocalTime end = request.getEndTime();
+
+        // 6) Exclure les statuts non bloquants (RDV annulés ou rejetés ne bloquent pas le créneau)
+        List<AppointmentStatus> excludedStatuses = List.of(
+                AppointmentStatus.CANCELLED,
+                AppointmentStatus.REJECTED
+        );
+
+        // 7) Vérifier s’il existe déjà un RDV qui chevauche ce créneau pour ce docteur
+        List<Appointment> conflicts =
+                appointmentRepository.findConflictingAppointments(
+                        doctorProfile.getUser().getId(),
+                        date,
+                        start,
+                        end,
+                        excludedStatuses
+                );
+
+        if (!conflicts.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Ce créneau est déjà pris pour ce docteur."
+            );
+        }
+
+        // 8) Si tout est OK → créer et sauvegarder le rendez-vous
         Appointment appointment = Appointment.builder()
                 .doctor(doctorProfile)
                 .patient(patientProfile)
-                .date(request.getDate())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .date(date)
+                .startTime(start)
+                .endTime(end)
                 .status(AppointmentStatus.PENDING)
                 .reason(request.getReason())
                 .build();
@@ -148,4 +181,5 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         return appointment;
     }
+
 }
