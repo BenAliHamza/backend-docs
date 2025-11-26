@@ -20,6 +20,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final DoctorSpecialtySeeder doctorSpecialtySeeder;
     private final DoctorActSeeder doctorActSeeder;
     private final IndicatorTypeDataSeeder indicatorTypeDataSeeder;
+    private final MedicationDataSeeder medicationDataSeeder;
 
     @Override
     public void run(String... args) {
@@ -46,7 +47,8 @@ public class DemoDataInitializer implements CommandLineRunner {
         log.info("DemoDataInitializer: seeding doctor acts based on specialties...");
         doctorActSeeder.seed();
         indicatorTypeDataSeeder.seed();
-
+        log.info("DemoDataInitializer: seeding medications...");
+        medicationDataSeeder.seed();
         log.info("DemoDataInitializer: demo data seeding finished.");
     }
 }

@@ -1,0 +1,1002 @@
+[
+  {
+    "code": "MED001",
+    "name": "Paracetamol 500 mg tablet",
+    "description": "Common pain reliever and fever reducer."
+  },
+  {
+    "code": "MED002",
+    "name": "Ibuprofen 400 mg tablet",
+    "description": "Non-steroidal anti-inflammatory for pain and inflammation."
+  },
+  {
+    "code": "MED003",
+    "name": "Aspirin 100 mg tablet",
+    "description": "Low-dose antiplatelet used for cardiovascular prevention."
+  },
+  {
+    "code": "MED004",
+    "name": "Diclofenac 50 mg tablet",
+    "description": "NSAID used for joint and musculoskeletal pain."
+  },
+  {
+    "code": "MED005",
+    "name": "Naproxen 500 mg tablet",
+    "description": "NSAID for pain, inflammation, and menstrual cramps."
+  },
+  {
+    "code": "MED006",
+    "name": "Ketoprofen 100 mg capsule",
+    "description": "NSAID used for acute musculoskeletal pain."
+  },
+  {
+    "code": "MED007",
+    "name": "Tramadol 50 mg capsule",
+    "description": "Opioid-like analgesic for moderate pain."
+  },
+  {
+    "code": "MED008",
+    "name": "Codeine-paracetamol tablet",
+    "description": "Combination analgesic for stronger pain relief."
+  },
+  {
+    "code": "MED009",
+    "name": "Metamizole 500 mg tablet",
+    "description": "Analgesic and antipyretic used for severe pain and fever."
+  },
+  {
+    "code": "MED010",
+    "name": "Morphine 10 mg injection",
+    "description": "Strong opioid analgesic for severe pain, hospital use."
+  },
+  {
+    "code": "MED011",
+    "name": "Paracetamol 1 g tablet",
+    "description": "High-dose paracetamol for acute pain and fever in adults."
+  },
+  {
+    "code": "MED012",
+    "name": "Ibuprofen 200 mg tablet",
+    "description": "Lower-dose ibuprofen for mild pain and fever."
+  },
+  {
+    "code": "MED013",
+    "name": "Topical diclofenac 1% gel",
+    "description": "Topical NSAID gel for localized muscle and joint pain."
+  },
+  {
+    "code": "MED014",
+    "name": "Paracetamol syrup 250 mg/5 ml",
+    "description": "Liquid paracetamol formulation for children."
+  },
+  {
+    "code": "MED015",
+    "name": "Ibuprofen syrup 100 mg/5 ml",
+    "description": "Oral ibuprofen suspension for pediatric use."
+  },
+  {
+    "code": "MED016",
+    "name": "Acetylsalicylic acid 500 mg tablet",
+    "description": "Analgesic and antipyretic, also used for headache and flu-like symptoms."
+  },
+  {
+    "code": "MED017",
+    "name": "Paracetamol 125 mg suppository",
+    "description": "Rectal paracetamol dosage form for children with fever."
+  },
+  {
+    "code": "MED018",
+    "name": "Paracetamol 1 g intravenous infusion",
+    "description": "IV paracetamol for hospital use when oral route is not possible."
+  },
+  {
+    "code": "MED019",
+    "name": "Ibuprofen 600 mg tablet",
+    "description": "Higher-dose ibuprofen used for short-term treatment of pain and inflammation."
+  },
+  {
+    "code": "MED020",
+    "name": "Naproxen 250 mg tablet",
+    "description": "NSAID for mild to moderate musculoskeletal pain."
+  },
+  {
+    "code": "MED021",
+    "name": "Amoxicillin 500 mg capsule",
+    "description": "Broad-spectrum penicillin antibiotic for common bacterial infections."
+  },
+  {
+    "code": "MED022",
+    "name": "Amoxicillin-clavulanic acid 1 g tablet",
+    "description": "Penicillin antibiotic with beta-lactamase inhibitor for resistant infections."
+  },
+  {
+    "code": "MED023",
+    "name": "Amoxicillin 1 g tablet",
+    "description": "High-dose amoxicillin for respiratory and ENT infections."
+  },
+  {
+    "code": "MED024",
+    "name": "Azithromycin 500 mg tablet",
+    "description": "Macrolide antibiotic often used for respiratory and ENT infections."
+  },
+  {
+    "code": "MED025",
+    "name": "Ciprofloxacin 500 mg tablet",
+    "description": "Fluoroquinolone antibiotic used for urinary and gastrointestinal infections."
+  },
+  {
+    "code": "MED026",
+    "name": "Levofloxacin 500 mg tablet",
+    "description": "Fluoroquinolone antibiotic used for respiratory and urinary infections."
+  },
+  {
+    "code": "MED027",
+    "name": "Clarithromycin 500 mg tablet",
+    "description": "Macrolide antibiotic used in respiratory infections and H. pylori treatment."
+  },
+  {
+    "code": "MED028",
+    "name": "Doxycycline 100 mg capsule",
+    "description": "Tetracycline antibiotic used for acne, respiratory, and tick-borne infections."
+  },
+  {
+    "code": "MED029",
+    "name": "Metronidazole 500 mg tablet",
+    "description": "Antibacterial and antiprotozoal used for anaerobic and parasitic infections."
+  },
+  {
+    "code": "MED030",
+    "name": "Ceftriaxone 1 g injection",
+    "description": "Third-generation cephalosporin for severe systemic infections."
+  },
+  {
+    "code": "MED031",
+    "name": "Cefuroxime 500 mg tablet",
+    "description": "Second-generation cephalosporin antibiotic for respiratory and urinary infections."
+  },
+  {
+    "code": "MED032",
+    "name": "Cefixime 400 mg capsule",
+    "description": "Oral cephalosporin used for urinary and respiratory infections."
+  },
+  {
+    "code": "MED033",
+    "name": "Amikacin 500 mg injection",
+    "description": "Aminoglycoside antibiotic for severe hospital-acquired infections."
+  },
+  {
+    "code": "MED034",
+    "name": "Gentamicin 80 mg injection",
+    "description": "Aminoglycoside antibiotic used in combination therapy for serious infections."
+  },
+  {
+    "code": "MED035",
+    "name": "Nitrofurantoin 100 mg capsule",
+    "description": "Urinary antiseptic used for uncomplicated urinary tract infections."
+  },
+  {
+    "code": "MED036",
+    "name": "Trimethoprim-sulfamethoxazole tablet",
+    "description": "Combination antibiotic used for urinary and respiratory infections."
+  },
+  {
+    "code": "MED037",
+    "name": "Vancomycin 500 mg injection",
+    "description": "Glycopeptide antibiotic for resistant Gram-positive infections."
+  },
+  {
+    "code": "MED038",
+    "name": "Linezolid 600 mg tablet",
+    "description": "Oxazolidinone antibiotic used for multidrug-resistant Gram-positive infections."
+  },
+  {
+    "code": "MED039",
+    "name": "Clindamycin 300 mg capsule",
+    "description": "Lincosamide antibiotic used for skin, bone, and dental infections."
+  },
+  {
+    "code": "MED040",
+    "name": "Azithromycin 200 mg/5 ml suspension",
+    "description": "Oral azithromycin suspension used in pediatric infections."
+  },
+  {
+    "code": "MED041",
+    "name": "Enalapril 5 mg tablet",
+    "description": "ACE inhibitor used for hypertension and heart failure."
+  },
+  {
+    "code": "MED042",
+    "name": "Enalapril 10 mg tablet",
+    "description": "Higher-dose ACE inhibitor for blood pressure control."
+  },
+  {
+    "code": "MED043",
+    "name": "Lisinopril 10 mg tablet",
+    "description": "ACE inhibitor for hypertension and cardiovascular protection."
+  },
+  {
+    "code": "MED044",
+    "name": "Perindopril 5 mg tablet",
+    "description": "ACE inhibitor commonly used in long-term management of hypertension."
+  },
+  {
+    "code": "MED045",
+    "name": "Losartan 50 mg tablet",
+    "description": "Angiotensin receptor blocker (ARB) for hypertension."
+  },
+  {
+    "code": "MED046",
+    "name": "Valsartan 80 mg tablet",
+    "description": "ARB used for hypertension and heart failure."
+  },
+  {
+    "code": "MED047",
+    "name": "Candesartan 8 mg tablet",
+    "description": "ARB for blood pressure and heart failure management."
+  },
+  {
+    "code": "MED048",
+    "name": "Amlodipine 5 mg tablet",
+    "description": "Calcium channel blocker for hypertension and angina."
+  },
+  {
+    "code": "MED049",
+    "name": "Amlodipine 10 mg tablet",
+    "description": "Higher-dose CCB for blood pressure control."
+  },
+  {
+    "code": "MED050",
+    "name": "Bisoprolol 5 mg tablet",
+    "description": "Beta-blocker used for hypertension and heart failure."
+  },
+  {
+    "code": "MED051",
+    "name": "Bisoprolol 10 mg tablet",
+    "description": "Higher-dose beta-blocker for cardiac conditions."
+  },
+  {
+    "code": "MED052",
+    "name": "Metoprolol 50 mg tablet",
+    "description": "Beta-blocker used for hypertension, arrhythmias, and angina."
+  },
+  {
+    "code": "MED053",
+    "name": "Atenolol 50 mg tablet",
+    "description": "Selective beta-blocker for blood pressure and heart rate control."
+  },
+  {
+    "code": "MED054",
+    "name": "Furosemide 40 mg tablet",
+    "description": "Loop diuretic for edema and heart failure."
+  },
+  {
+    "code": "MED055",
+    "name": "Hydrochlorothiazide 25 mg tablet",
+    "description": "Thiazide diuretic for hypertension and fluid retention."
+  },
+  {
+    "code": "MED056",
+    "name": "Spironolactone 25 mg tablet",
+    "description": "Potassium-sparing diuretic used in heart failure and cirrhosis."
+  },
+  {
+    "code": "MED057",
+    "name": "Atorvastatin 20 mg tablet",
+    "description": "Statin used to lower LDL cholesterol and reduce cardiovascular risk."
+  },
+  {
+    "code": "MED058",
+    "name": "Atorvastatin 40 mg tablet",
+    "description": "Higher-dose statin therapy for high cardiovascular risk."
+  },
+  {
+    "code": "MED059",
+    "name": "Rosuvastatin 10 mg tablet",
+    "description": "Statin used for dyslipidemia and cardiovascular prevention."
+  },
+  {
+    "code": "MED060",
+    "name": "Clopidogrel 75 mg tablet",
+    "description": "Antiplatelet agent used after stroke, MI, and stent placement."
+  },
+  {
+    "code": "MED061",
+    "name": "Metformin 500 mg tablet",
+    "description": "First-line oral antidiabetic for type 2 diabetes."
+  },
+  {
+    "code": "MED062",
+    "name": "Metformin 850 mg tablet",
+    "description": "Higher-dose metformin for glycemic control."
+  },
+  {
+    "code": "MED063",
+    "name": "Gliclazide 60 mg modified-release tablet",
+    "description": "Sulfonylurea for type 2 diabetes to stimulate insulin secretion."
+  },
+  {
+    "code": "MED064",
+    "name": "Glimepiride 2 mg tablet",
+    "description": "Oral antidiabetic sulfonylurea agent."
+  },
+  {
+    "code": "MED065",
+    "name": "Insulin glargine 100 IU/ml injection",
+    "description": "Long-acting basal insulin for diabetes mellitus."
+  },
+  {
+    "code": "MED066",
+    "name": "Insulin aspart 100 IU/ml injection",
+    "description": "Rapid-acting insulin used at mealtimes."
+  },
+  {
+    "code": "MED067",
+    "name": "Insulin regular 100 IU/ml injection",
+    "description": "Short-acting insulin for glycemic control."
+  },
+  {
+    "code": "MED068",
+    "name": "Sitagliptin 100 mg tablet",
+    "description": "DPP-4 inhibitor used as add-on therapy in type 2 diabetes."
+  },
+  {
+    "code": "MED069",
+    "name": "Vildagliptin 50 mg tablet",
+    "description": "DPP-4 inhibitor for oral glycemic control in type 2 diabetes."
+  },
+  {
+    "code": "MED070",
+    "name": "Empagliflozin 10 mg tablet",
+    "description": "SGLT2 inhibitor for diabetes with cardiovascular benefit."
+  },
+  {
+    "code": "MED071",
+    "name": "Levothyroxine 50 mcg tablet",
+    "description": "Thyroid hormone replacement for hypothyroidism."
+  },
+  {
+    "code": "MED072",
+    "name": "Levothyroxine 100 mcg tablet",
+    "description": "Higher-dose thyroid hormone replacement."
+  },
+  {
+    "code": "MED073",
+    "name": "Carbimazole 5 mg tablet",
+    "description": "Antithyroid medication used to treat hyperthyroidism."
+  },
+  {
+    "code": "MED074",
+    "name": "Prednisone 5 mg tablet",
+    "description": "Oral corticosteroid for inflammatory and autoimmune conditions."
+  },
+  {
+    "code": "MED075",
+    "name": "Prednisone 20 mg tablet",
+    "description": "Higher-dose corticosteroid for acute inflammation."
+  },
+  {
+    "code": "MED076",
+    "name": "Hydrocortisone 10 mg tablet",
+    "description": "Glucocorticoid for adrenal insufficiency and inflammation."
+  },
+  {
+    "code": "MED077",
+    "name": "Dexamethasone 4 mg tablet",
+    "description": "Potent corticosteroid for severe inflammation and allergic reactions."
+  },
+  {
+    "code": "MED078",
+    "name": "Insulin NPH 100 IU/ml injection",
+    "description": "Intermediate-acting insulin for diabetes control."
+  },
+  {
+    "code": "MED079",
+    "name": "Metformin 1000 mg tablet",
+    "description": "High-dose metformin formulation used in type 2 diabetes."
+  },
+  {
+    "code": "MED080",
+    "name": "Glipizide 5 mg tablet",
+    "description": "Sulfonylurea antidiabetic agent for type 2 diabetes."
+  },
+  {
+    "code": "MED081",
+    "name": "Omeprazole 20 mg capsule",
+    "description": "Proton pump inhibitor for acid reflux and peptic ulcer disease."
+  },
+  {
+    "code": "MED082",
+    "name": "Omeprazole 40 mg capsule",
+    "description": "Higher-dose PPI for severe gastroesophageal reflux disease."
+  },
+  {
+    "code": "MED083",
+    "name": "Pantoprazole 40 mg tablet",
+    "description": "PPI used for gastric and duodenal ulcers and reflux."
+  },
+  {
+    "code": "MED084",
+    "name": "Esomeprazole 40 mg capsule",
+    "description": "PPI used for GERD and erosive esophagitis."
+  },
+  {
+    "code": "MED085",
+    "name": "Ranitidine 150 mg tablet",
+    "description": "H2 blocker formerly used for dyspepsia and reflux."
+  },
+  {
+    "code": "MED086",
+    "name": "Domperidone 10 mg tablet",
+    "description": "Prokinetic and antiemetic used for nausea and bloating."
+  },
+  {
+    "code": "MED087",
+    "name": "Metoclopramide 10 mg tablet",
+    "description": "Antiemetic and prokinetic used in nausea and vomiting."
+  },
+  {
+    "code": "MED088",
+    "name": "Ondansetron 4 mg tablet",
+    "description": "Antiemetic often used in chemotherapy or postoperative nausea."
+  },
+  {
+    "code": "MED089",
+    "name": "Loperamide 2 mg capsule",
+    "description": "Antidiarrheal medication used in acute diarrhea."
+  },
+  {
+    "code": "MED090",
+    "name": "Oral rehydration salts sachet",
+    "description": "Powder solution for oral rehydration in diarrhea and dehydration."
+  },
+  {
+    "code": "MED091",
+    "name": "Magnesium hydroxide oral suspension",
+    "description": "Antacid and mild laxative for dyspepsia and constipation."
+  },
+  {
+    "code": "MED092",
+    "name": "Lactulose 10 g/15 ml syrup",
+    "description": "Osmotic laxative used for constipation and hepatic encephalopathy."
+  },
+  {
+    "code": "MED093",
+    "name": "Bisacodyl 5 mg tablet",
+    "description": "Stimulant laxative used for short-term relief of constipation."
+  },
+  {
+    "code": "MED094",
+    "name": "Activated charcoal tablet",
+    "description": "Adsorbent used in some cases of poisoning and gas-related discomfort."
+  },
+  {
+    "code": "MED095",
+    "name": "Sucralfate 1 g tablet",
+    "description": "Gastroprotective agent used in peptic ulcers."
+  },
+  {
+    "code": "MED096",
+    "name": "Mesalazine 500 mg tablet",
+    "description": "Anti-inflammatory drug for inflammatory bowel disease."
+  },
+  {
+    "code": "MED097",
+    "name": "Hyoscine butylbromide 10 mg tablet",
+    "description": "Antispasmodic for abdominal cramps and colicky pain."
+  },
+  {
+    "code": "MED098",
+    "name": "Simethicone 80 mg chewable tablet",
+    "description": "Antiflatulent used to relieve gas-related discomfort."
+  },
+  {
+    "code": "MED099",
+    "name": "Probiotic capsule",
+    "description": "Oral probiotic used to restore intestinal flora."
+  },
+  {
+    "code": "MED100",
+    "name": "Esomeprazole 20 mg capsule",
+    "description": "PPI for treatment of mild to moderate reflux symptoms."
+  },
+  {
+    "code": "MED101",
+    "name": "Salbutamol 100 mcg inhaler",
+    "description": "Short-acting bronchodilator for asthma and bronchospasm."
+  },
+  {
+    "code": "MED102",
+    "name": "Salbutamol syrup 2 mg/5 ml",
+    "description": "Oral bronchodilator used in pediatric asthma."
+  },
+  {
+    "code": "MED103",
+    "name": "Budesonide inhaler 200 mcg",
+    "description": "Inhaled corticosteroid for maintenance treatment of asthma."
+  },
+  {
+    "code": "MED104",
+    "name": "Budesonide-formoterol inhaler",
+    "description": "Combination inhaler used for persistent asthma or COPD."
+  },
+  {
+    "code": "MED105",
+    "name": "Fluticasone nasal spray",
+    "description": "Intranasal corticosteroid for allergic rhinitis."
+  },
+  {
+    "code": "MED106",
+    "name": "Cetirizine 10 mg tablet",
+    "description": "Second-generation antihistamine for allergy symptoms."
+  },
+  {
+    "code": "MED107",
+    "name": "Loratadine 10 mg tablet",
+    "description": "Non-sedating antihistamine used for allergic rhinitis and urticaria."
+  },
+  {
+    "code": "MED108",
+    "name": "Chlorpheniramine 4 mg tablet",
+    "description": "First-generation antihistamine with sedative effects."
+  },
+  {
+    "code": "MED109",
+    "name": "Montelukast 10 mg tablet",
+    "description": "Leukotriene receptor antagonist used in asthma and allergic rhinitis."
+  },
+  {
+    "code": "MED110",
+    "name": "Theophylline 200 mg tablet",
+    "description": "Bronchodilator used in chronic asthma and COPD."
+  },
+  {
+    "code": "MED111",
+    "name": "Ipratropium bromide inhaler",
+    "description": "Anticholinergic bronchodilator used in COPD."
+  },
+  {
+    "code": "MED112",
+    "name": "Guaifenesin syrup",
+    "description": "Expectorant used to relieve chest congestion and cough."
+  },
+  {
+    "code": "MED113",
+    "name": "Dextromethorphan syrup",
+    "description": "Cough suppressant for dry, non-productive cough."
+  },
+  {
+    "code": "MED114",
+    "name": "Acetylcysteine 200 mg sachet",
+    "description": "Mucolytic agent used to thin respiratory secretions."
+  },
+  {
+    "code": "MED115",
+    "name": "Phenylephrine nasal drops",
+    "description": "Topical nasal decongestant for short-term relief of nasal obstruction."
+  },
+  {
+    "code": "MED116",
+    "name": "Levocetirizine 5 mg tablet",
+    "description": "Second-generation antihistamine for allergic conditions."
+  },
+  {
+    "code": "MED117",
+    "name": "Desloratadine 5 mg tablet",
+    "description": "Long-acting antihistamine used for allergic rhinitis and urticaria."
+  },
+  {
+    "code": "MED118",
+    "name": "Bromhexine syrup",
+    "description": "Mucolytic and expectorant for productive cough."
+  },
+  {
+    "code": "MED119",
+    "name": "Pseudoephedrine tablet",
+    "description": "Systemic decongestant for nasal congestion in colds and allergies."
+  },
+  {
+    "code": "MED120",
+    "name": "Fluticasone-salmeterol inhaler",
+    "description": "Combination inhaler for moderate to severe asthma and COPD."
+  },
+  {
+    "code": "MED121",
+    "name": "Diazepam 5 mg tablet",
+    "description": "Benzodiazepine used for anxiety and muscle spasms."
+  },
+  {
+    "code": "MED122",
+    "name": "Diazepam 10 mg injection",
+    "description": "Injectable benzodiazepine used for seizures and acute anxiety."
+  },
+  {
+    "code": "MED123",
+    "name": "Alprazolam 0.5 mg tablet",
+    "description": "Short-acting benzodiazepine for anxiety and panic disorders."
+  },
+  {
+    "code": "MED124",
+    "name": "Clonazepam 0.5 mg tablet",
+    "description": "Benzodiazepine used for seizures and anxiety disorders."
+  },
+  {
+    "code": "MED125",
+    "name": "Sertraline 50 mg tablet",
+    "description": "SSRI antidepressant used for depression and anxiety disorders."
+  },
+  {
+    "code": "MED126",
+    "name": "Fluoxetine 20 mg capsule",
+    "description": "SSRI antidepressant used for depression, anxiety, and OCD."
+  },
+  {
+    "code": "MED127",
+    "name": "Citalopram 20 mg tablet",
+    "description": "SSRI used for depressive disorders."
+  },
+  {
+    "code": "MED128",
+    "name": "Escitalopram 10 mg tablet",
+    "description": "SSRI often used as first-line antidepressant."
+  },
+  {
+    "code": "MED129",
+    "name": "Amitriptyline 25 mg tablet",
+    "description": "Tricyclic antidepressant also used for neuropathic pain."
+  },
+  {
+    "code": "MED130",
+    "name": "Mirtazapine 30 mg tablet",
+    "description": "Antidepressant with sedative effect used in depression with insomnia."
+  },
+  {
+    "code": "MED131",
+    "name": "Haloperidol 5 mg tablet",
+    "description": "Typical antipsychotic used for psychosis and agitation."
+  },
+  {
+    "code": "MED132",
+    "name": "Olanzapine 10 mg tablet",
+    "description": "Atypical antipsychotic used for schizophrenia and bipolar disorder."
+  },
+  {
+    "code": "MED133",
+    "name": "Quetiapine 100 mg tablet",
+    "description": "Atypical antipsychotic used in bipolar disorder and psychosis."
+  },
+  {
+    "code": "MED134",
+    "name": "Risperidone 2 mg tablet",
+    "description": "Atypical antipsychotic used for psychotic disorders and behavioral symptoms."
+  },
+  {
+    "code": "MED135",
+    "name": "Carbamazepine 200 mg tablet",
+    "description": "Antiepileptic also used for trigeminal neuralgia and bipolar disorder."
+  },
+  {
+    "code": "MED136",
+    "name": "Valproic acid 500 mg tablet",
+    "description": "Antiepileptic and mood stabilizer for epilepsy and bipolar disorder."
+  },
+  {
+    "code": "MED137",
+    "name": "Lamotrigine 100 mg tablet",
+    "description": "Antiepileptic and mood stabilizer used in bipolar disorder."
+  },
+  {
+    "code": "MED138",
+    "name": "Gabapentin 300 mg capsule",
+    "description": "Antiepileptic used for neuropathic pain and seizures."
+  },
+  {
+    "code": "MED139",
+    "name": "Pregabalin 75 mg capsule",
+    "description": "Medication used for neuropathic pain and generalized anxiety disorder."
+  },
+  {
+    "code": "MED140",
+    "name": "Zolpidem 10 mg tablet",
+    "description": "Hypnotic agent used for short-term treatment of insomnia."
+  },
+  {
+    "code": "MED141",
+    "name": "Multivitamin tablet",
+    "description": "Oral multivitamin supplement for general nutritional support."
+  },
+  {
+    "code": "MED142",
+    "name": "Vitamin C 500 mg tablet",
+    "description": "Antioxidant supplement used in vitamin C deficiency."
+  },
+  {
+    "code": "MED143",
+    "name": "Vitamin D3 1000 IU capsule",
+    "description": "Vitamin D supplement for bone health and deficiency states."
+  },
+  {
+    "code": "MED144",
+    "name": "Vitamin D3 50000 IU capsule",
+    "description": "High-dose vitamin D used for severe deficiency."
+  },
+  {
+    "code": "MED145",
+    "name": "Calcium carbonate 500 mg tablet",
+    "description": "Calcium supplement for bone health and deficiency."
+  },
+  {
+    "code": "MED146",
+    "name": "Calcium-vitamin D combination tablet",
+    "description": "Supplement used in osteoporosis prevention and treatment."
+  },
+  {
+    "code": "MED147",
+    "name": "Iron sulfate 80 mg tablet",
+    "description": "Iron supplement used for iron-deficiency anemia."
+  },
+  {
+    "code": "MED148",
+    "name": "Folic acid 5 mg tablet",
+    "description": "Vitamin used in anemia and pregnancy supplementation."
+  },
+  {
+    "code": "MED149",
+    "name": "Vitamin B complex tablet",
+    "description": "Combination of B vitamins used in neuropathy and deficiency states."
+  },
+  {
+    "code": "MED150",
+    "name": "Zinc sulfate 20 mg tablet",
+    "description": "Zinc supplement used in deficiency and some diarrheal illnesses."
+  },
+  {
+    "code": "MED151",
+    "name": "Magnesium oxide 400 mg tablet",
+    "description": "Magnesium supplement used in deficiency and muscle cramps."
+  },
+  {
+    "code": "MED152",
+    "name": "Potassium chloride 600 mg tablet",
+    "description": "Potassium supplement used to treat hypokalemia."
+  },
+  {
+    "code": "MED153",
+    "name": "Vitamin B12 1000 mcg injection",
+    "description": "Cobalamin injection for vitamin B12 deficiency and pernicious anemia."
+  },
+  {
+    "code": "MED154",
+    "name": "Vitamin A capsule 50000 IU",
+    "description": "Vitamin supplement for deficiency, especially in children."
+  },
+  {
+    "code": "MED155",
+    "name": "Omega-3 fatty acid capsule",
+    "description": "Supplement used for cardiovascular and triglyceride management."
+  },
+  {
+    "code": "MED156",
+    "name": "Vitamin E 400 IU capsule",
+    "description": "Antioxidant vitamin supplement used in various deficiency states."
+  },
+  {
+    "code": "MED157",
+    "name": "Selenium tablet",
+    "description": "Trace element supplement sometimes used with antioxidants."
+  },
+  {
+    "code": "MED158",
+    "name": "Vitamin K1 injection",
+    "description": "Used to correct vitamin K deficiency and certain coagulopathies."
+  },
+  {
+    "code": "MED159",
+    "name": "Oral rehydration salts with zinc sachet",
+    "description": "Rehydration solution with zinc for pediatric diarrhea."
+  },
+  {
+    "code": "MED160",
+    "name": "Pediatric multivitamin drops",
+    "description": "Liquid multivitamin formulation for infants and young children."
+  },
+  {
+    "code": "MED161",
+    "name": "Hydrocortisone 1% cream",
+    "description": "Mild topical corticosteroid for skin inflammation and itching."
+  },
+  {
+    "code": "MED162",
+    "name": "Betamethasone 0.1% cream",
+    "description": "Topical corticosteroid for inflammatory skin conditions."
+  },
+  {
+    "code": "MED163",
+    "name": "Clotrimazole 1% cream",
+    "description": "Topical antifungal for skin infections such as tinea."
+  },
+  {
+    "code": "MED164",
+    "name": "Miconazole 2% cream",
+    "description": "Topical antifungal used in skin and vaginal infections."
+  },
+  {
+    "code": "MED165",
+    "name": "Nystatin oral suspension",
+    "description": "Antifungal used for oral candidiasis."
+  },
+  {
+    "code": "MED166",
+    "name": "Fusidic acid 2% cream",
+    "description": "Topical antibiotic used for localized skin infections."
+  },
+  {
+    "code": "MED167",
+    "name": "Silver sulfadiazine 1% cream",
+    "description": "Topical antimicrobial used for burn wound care."
+  },
+  {
+    "code": "MED168",
+    "name": "Benzoyl peroxide 5% gel",
+    "description": "Topical treatment for acne vulgaris."
+  },
+  {
+    "code": "MED169",
+    "name": "Adapalene 0.1% gel",
+    "description": "Topical retinoid used in acne treatment."
+  },
+  {
+    "code": "MED170",
+    "name": "Salicylic acid 2% solution",
+    "description": "Keratolytic agent used for acne and hyperkeratotic skin."
+  },
+  {
+    "code": "MED171",
+    "name": "Topical clindamycin 1% gel",
+    "description": "Topical antibiotic gel used for acne."
+  },
+  {
+    "code": "MED172",
+    "name": "Ketoconazole 2% shampoo",
+    "description": "Antifungal shampoo used for dandruff and seborrheic dermatitis."
+  },
+  {
+    "code": "MED173",
+    "name": "Calamine lotion",
+    "description": "Topical soothing agent for itching and minor skin irritation."
+  },
+  {
+    "code": "MED174",
+    "name": "Povidone-iodine 10% solution",
+    "description": "Topical antiseptic used for wound and skin disinfection."
+  },
+  {
+    "code": "MED175",
+    "name": "Chlorhexidine 0.05% solution",
+    "description": "Antiseptic solution for skin and mucous membrane disinfection."
+  },
+  {
+    "code": "MED176",
+    "name": "Lidocaine 5% ointment",
+    "description": "Topical anesthetic used for local pain relief."
+  },
+  {
+    "code": "MED177",
+    "name": "Hydroquinone 4% cream",
+    "description": "Depigmenting agent used for hyperpigmentation disorders."
+  },
+  {
+    "code": "MED178",
+    "name": "Neomycin-bacitracin topical ointment",
+    "description": "Topical antibiotic combination used for minor skin infections."
+  },
+  {
+    "code": "MED179",
+    "name": "Urea 10% cream",
+    "description": "Emollient and keratolytic used for dry, scaly skin."
+  },
+  {
+    "code": "MED180",
+    "name": "Clobetasol 0.05% cream",
+    "description": "Potent topical corticosteroid for severe inflammatory dermatoses."
+  },
+  {
+    "code": "MED181",
+    "name": "Acetylsalicylic acid 300 mg tablet",
+    "description": "Analgesic and antipyretic used for pain and fever."
+  },
+  {
+    "code": "MED182",
+    "name": "Allopurinol 300 mg tablet",
+    "description": "Xanthine oxidase inhibitor used for chronic gout management."
+  },
+  {
+    "code": "MED183",
+    "name": "Colchicine 0.5 mg tablet",
+    "description": "Anti-inflammatory agent used in acute gout attacks."
+  },
+  {
+    "code": "MED184",
+    "name": "Tamsulosin 0.4 mg capsule",
+    "description": "Alpha-blocker used for benign prostatic hyperplasia."
+  },
+  {
+    "code": "MED185",
+    "name": "Finasteride 5 mg tablet",
+    "description": "Medication used in benign prostatic hyperplasia."
+  },
+  {
+    "code": "MED186",
+    "name": "Sildenafil 50 mg tablet",
+    "description": "Phosphodiesterase inhibitor used for erectile dysfunction."
+  },
+  {
+    "code": "MED187",
+    "name": "Tadalafil 10 mg tablet",
+    "description": "Longer-acting agent for erectile dysfunction."
+  },
+  {
+    "code": "MED188",
+    "name": "Levothyroxine 25 mcg tablet",
+    "description": "Low-dose thyroid hormone replacement."
+  },
+  {
+    "code": "MED189",
+    "name": "Nifedipine 30 mg modified-release tablet",
+    "description": "Calcium channel blocker for hypertension and angina."
+  },
+  {
+    "code": "MED190",
+    "name": "Isosorbide mononitrate 20 mg tablet",
+    "description": "Nitrate used in prophylaxis of angina pectoris."
+  },
+  {
+    "code": "MED191",
+    "name": "Warfarin 5 mg tablet",
+    "description": "Oral anticoagulant used for thromboembolic prevention."
+  },
+  {
+    "code": "MED192",
+    "name": "Apixaban 5 mg tablet",
+    "description": "Direct oral anticoagulant used for stroke prevention in atrial fibrillation."
+  },
+  {
+    "code": "MED193",
+    "name": "Rivaroxaban 20 mg tablet",
+    "description": "DOAC used for prevention and treatment of venous thromboembolism."
+  },
+  {
+    "code": "MED194",
+    "name": "Digoxin 0.25 mg tablet",
+    "description": "Cardiac glycoside used in heart failure and atrial fibrillation."
+  },
+  {
+    "code": "MED195",
+    "name": "Nitroglycerin 0.5 mg sublingual tablet",
+    "description": "Rapid-acting nitrate for acute relief of angina attacks."
+  },
+  {
+    "code": "MED196",
+    "name": "Spironolactone 50 mg tablet",
+    "description": "Potassium-sparing diuretic used in heart failure and resistant hypertension."
+  },
+  {
+    "code": "MED197",
+    "name": "Methotrexate 10 mg tablet",
+    "description": "Disease-modifying drug used in rheumatoid arthritis and some cancers."
+  },
+  {
+    "code": "MED198",
+    "name": "Azathioprine 50 mg tablet",
+    "description": "Immunosuppressant used in autoimmune diseases and transplantation."
+  },
+  {
+    "code": "MED199",
+    "name": "Cyclobenzaprine 10 mg tablet",
+    "description": "Muscle relaxant used for acute musculoskeletal spasm."
+  },
+  {
+    "code": "MED200",
+    "name": "Melatonin 3 mg tablet",
+    "description": "Sleep regulator used for short-term treatment of insomnia."
+  }
+]
