@@ -10,13 +10,25 @@ import java.util.List;
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
     /**
-     * Check overlap for a given doctor and status.
-     * We consider an overlap if:
-     *  new.startAt < existing.endAt AND new.endAt > existing.startAt
+     * Legacy method: overlap for a given doctor and EXACT status.
+     * Kept for compatibility, but the service layer now prefers the method
+     * without status and applies blocking logic in memory.
+     *
+     * Overlap if: new.startAt < existing.endAt AND new.endAt > existing.startAt
      */
     List<Appointment> findByDoctorIdAndDeletedFalseAndStatusAndStartAtLessThanAndEndAtGreaterThan(
             Long doctorId,
             AppointmentStatus status,
+            LocalDateTime end,
+            LocalDateTime start
+    );
+
+    /**
+     * Overlap for a given doctor, regardless of status.
+     * Overlap if: new.startAt < existing.endAt AND new.endAt > existing.startAt
+     */
+    List<Appointment> findByDoctorIdAndDeletedFalseAndStartAtLessThanAndEndAtGreaterThan(
+            Long doctorId,
             LocalDateTime end,
             LocalDateTime start
     );

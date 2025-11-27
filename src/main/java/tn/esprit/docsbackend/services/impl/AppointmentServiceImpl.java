@@ -8,7 +8,10 @@ import org.springframework.web.server.ResponseStatusException;
 import tn.esprit.docsbackend.dto.appointment.AppointmentCreateRequest;
 import tn.esprit.docsbackend.dto.appointment.AppointmentDto;
 import tn.esprit.docsbackend.dto.appointment.AppointmentStatusUpdateRequest;
+import tn.esprit.docsbackend.dto.appointment.DailyScheduleDto;
 import tn.esprit.docsbackend.dto.appointment.DoctorScheduleDto;
+import tn.esprit.docsbackend.dto.appointment.SlotDto;
+import tn.esprit.docsbackend.dto.appointment.WeeklyCalendarResponse;
 import tn.esprit.docsbackend.entities.Appointment;
 import tn.esprit.docsbackend.entities.DoctorProfile;
 import tn.esprit.docsbackend.entities.DoctorSchedule;
@@ -71,7 +74,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .findByUserIdAndDeletedFalse(currentUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
 
-        // Mark existing schedules as deleted (soft delete) to keep things simple.
+        // Soft delete existing schedules
         List<DoctorSchedule> existing = doctorScheduleRepository
                 .findByDoctorIdAndDeletedFalseAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(doctorProfile.getId());
         for (DoctorSchedule s : existing) {
@@ -80,7 +83,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         doctorScheduleRepository.saveAll(existing);
 
         if (entries == null || entries.isEmpty()) {
-            // Doctor chose to clear schedule
             return List.of();
         }
 
@@ -95,9 +97,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Public: get weekly schedule of a specific doctor by doctor profile id.
-     */
     @Override
     @Transactional(readOnly = true)
     public List<DoctorScheduleDto> getScheduleForDoctor(Long doctorId) {
@@ -112,13 +111,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Doctor profile with id=" + doctorId + " not found"
                 ));
 
-        User doctorUser = doctorProfile.getUser();
-        if (doctorUser == null
-                || doctorUser.isDeleted()
-                || doctorUser.getStatus() != UserStatus.ACTIVE
-                || doctorUser.getRole() != Role.DOCTOR) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not active");
-        }
+        validateDoctorActive(doctorProfile);
 
         return doctorScheduleRepository
                 .findByDoctorIdAndDeletedFalseAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(doctorProfile.getId())
@@ -127,10 +120,8 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Public: compute available appointment slots for a doctor between [from, to].
-     * Returns a list of ISO-8601 time ranges formatted as "start/end".
-     */
+    // ==================== Available slots (range) ====================
+
     @Override
     @Transactional(readOnly = true)
     public List<String> getDoctorAvailableSlots(Long doctorId, LocalDateTime from, LocalDateTime to) {
@@ -151,13 +142,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Doctor profile with id=" + doctorId + " not found"
                 ));
 
-        User doctorUser = doctorProfile.getUser();
-        if (doctorUser == null
-                || doctorUser.isDeleted()
-                || doctorUser.getStatus() != UserStatus.ACTIVE
-                || doctorUser.getRole() != Role.DOCTOR) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not active");
-        }
+        validateDoctorActive(doctorProfile);
 
         List<DoctorSchedule> schedules = doctorScheduleRepository
                 .findByDoctorIdAndDeletedFalseAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(doctorProfile.getId());
@@ -166,7 +151,6 @@ public class AppointmentServiceImpl implements AppointmentService {
             return List.of();
         }
 
-        // Load all appointments for this doctor (we'll filter by date range in memory).
         List<Appointment> allAppointments = appointmentRepository
                 .findByDoctorIdAndDeletedFalseOrderByStartAtAsc(doctorProfile.getId());
 
@@ -178,17 +162,17 @@ public class AppointmentServiceImpl implements AppointmentService {
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             DayOfWeek dow = date.getDayOfWeek();
 
-            // Schedule entries for this day of week
+            // Fix lambda requirement: assign to final variable
+            final LocalDate finalDate = date;
+
             List<DoctorSchedule> daySchedules = schedules.stream()
                     .filter(s -> s.getDayOfWeek() == dow && Boolean.TRUE.equals(s.getActive()))
-                    .toList();
+                    .collect(Collectors.toList());
 
             if (daySchedules.isEmpty()) {
                 continue;
             }
 
-            // Appointments on this date that should block availability
-            LocalDate finalDate = date;
             List<Appointment> dayAppointments = allAppointments.stream()
                     .filter(a -> {
                         if (a == null || a.isDeleted() || a.getStartAt() == null || a.getEndAt() == null) {
@@ -197,77 +181,192 @@ public class AppointmentServiceImpl implements AppointmentService {
                         if (!a.getStartAt().toLocalDate().equals(finalDate)) {
                             return false;
                         }
-                        // Treat CANCELLED and REJECTED as non-blocking, others block.
-                        if (a.getStatus() != null) {
-                            String name = a.getStatus().name();
-                            if ("CANCELLED".equals(name) || "REJECTED".equals(name)) {
-                                return false;
-                            }
-                        }
-                        // Only consider those overlapping the [from, to] window
-                        LocalDateTime s = a.getStartAt();
-                        LocalDateTime e = a.getEndAt();
-                        return !e.isBefore(from) && s.isBefore(to);
+                        return isBlockingStatus(a.getStatus());
                     })
                     .collect(Collectors.toList());
 
             for (DoctorSchedule schedule : daySchedules) {
+
                 LocalDateTime slotStart = LocalDateTime.of(date, schedule.getStartTime());
                 LocalDateTime slotEnd = LocalDateTime.of(date, schedule.getEndTime());
 
-                // Clamp to global requested range
                 if (slotEnd.isBefore(from) || !slotStart.isBefore(to)) {
                     continue;
                 }
-                if (slotStart.isBefore(from)) {
-                    slotStart = from;
-                }
-                if (slotEnd.isAfter(to)) {
-                    slotEnd = to;
-                }
 
-                // Start with the entire schedule slot, then subtract appointments.
-                List<TimeRange> freeRanges = new ArrayList<>();
-                freeRanges.add(new TimeRange(slotStart, slotEnd));
+                LocalDateTime effectiveStart = slotStart.isBefore(from) ? from : slotStart;
+                LocalDateTime effectiveEnd = slotEnd.isAfter(to) ? to : slotEnd;
+
+                final List<TimeRange> freeRanges = new ArrayList<>();
+                freeRanges.add(new TimeRange(effectiveStart, effectiveEnd));
 
                 for (Appointment appt : dayAppointments) {
+
                     LocalDateTime apptStart = appt.getStartAt();
                     LocalDateTime apptEnd = appt.getEndAt();
 
-                    if (apptEnd.isBefore(slotStart) || !apptStart.isBefore(slotEnd)) {
-                        continue; // no overlap with this schedule slot
+                    if (apptEnd.isBefore(effectiveStart) || !apptStart.isBefore(effectiveEnd)) {
+                        continue;
                     }
 
                     List<TimeRange> updated = new ArrayList<>();
                     for (TimeRange range : freeRanges) {
-                        // If no overlap between free range and appointment, keep range as is.
                         if (apptEnd.isBefore(range.start) || !apptStart.isBefore(range.end)) {
                             updated.add(range);
                             continue;
                         }
-
-                        // Left part, before appointment
                         if (apptStart.isAfter(range.start)) {
                             updated.add(new TimeRange(range.start, apptStart));
                         }
-                        // Right part, after appointment
                         if (apptEnd.isBefore(range.end)) {
                             updated.add(new TimeRange(apptEnd, range.end));
                         }
                     }
-                    freeRanges = updated;
+
+                    freeRanges.clear();
+                    freeRanges.addAll(updated);
                 }
 
                 for (TimeRange range : freeRanges) {
                     if (range.start.isBefore(range.end)) {
-                        // Represent as "start/end" in ISO-8601
-                        result.add(range.start.toString() + "/" + range.end.toString());
+                        result.add(range.start + "/" + range.end);
                     }
                 }
             }
         }
 
         return result;
+    }
+
+    // ==================== Weekly calendar ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public WeeklyCalendarResponse getWeeklyCalendarForDoctor(Long doctorId, LocalDate weekStart) {
+        if (doctorId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "doctorId is required");
+        }
+
+        DoctorProfile doctorProfile = doctorProfileRepository.findById(doctorId)
+                .filter(d -> !d.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Doctor profile with id=" + doctorId + " not found"
+                ));
+
+        validateDoctorActive(doctorProfile);
+
+        LocalDate startDate;
+        if (weekStart != null) {
+            startDate = weekStart;
+        } else {
+            LocalDate today = LocalDate.now();
+            DayOfWeek dow = today.getDayOfWeek();
+            int diff = dow.getValue() - DayOfWeek.MONDAY.getValue();
+            if (diff < 0) diff += 7;
+            startDate = today.minusDays(diff);
+        }
+        LocalDate endDate = startDate.plusDays(6);
+
+        List<DoctorSchedule> schedules = doctorScheduleRepository
+                .findByDoctorIdAndDeletedFalseAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(doctorProfile.getId());
+
+        List<Appointment> allAppointments;
+        if (schedules.isEmpty()) {
+            allAppointments = List.of();
+        } else {
+            LocalDateTime rangeFrom = startDate.atStartOfDay();
+            LocalDateTime rangeTo = endDate.plusDays(1).atStartOfDay().minusSeconds(1);
+            allAppointments = appointmentRepository
+                    .findByDoctorIdAndDeletedFalseAndStartAtBetweenOrderByStartAtAsc(
+                            doctorProfile.getId(), rangeFrom, rangeTo);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        Integer maxDailyAppointments = doctorProfile.getMaxDailyAppointments();
+
+        List<DailyScheduleDto> days = new ArrayList<>();
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+
+            DayOfWeek dow = date.getDayOfWeek();
+            final LocalDate finalDate = date;
+
+            List<DoctorSchedule> daySchedules = schedules.stream()
+                    .filter(s -> s.getDayOfWeek() == dow && Boolean.TRUE.equals(s.getActive()))
+                    .toList();
+
+            List<Appointment> dayAppointments = allAppointments.stream()
+                    .filter(a -> {
+                        if (a == null || a.isDeleted() || a.getStartAt() == null) {
+                            return false;
+                        }
+                        return a.getStartAt().toLocalDate().equals(finalDate);
+                    })
+                    .collect(Collectors.toList());
+
+            int blockingAppointmentsCount = (int) dayAppointments.stream()
+                    .filter(a -> isBlockingStatus(a.getStatus()))
+                    .count();
+
+            boolean dailyLimitReached = maxDailyAppointments != null
+                    && blockingAppointmentsCount >= maxDailyAppointments;
+
+            List<SlotDto> slots = new ArrayList<>();
+
+            for (DoctorSchedule schedule : daySchedules) {
+                LocalTime scheduleStart = schedule.getStartTime();
+                LocalTime scheduleEnd = schedule.getEndTime();
+
+                if (!scheduleEnd.isAfter(scheduleStart)) continue;
+
+                LocalTime slotStartTime = scheduleStart;
+
+                while (slotStartTime.plusMinutes(30).compareTo(scheduleEnd) <= 0) {
+
+                    LocalDateTime slotStart = LocalDateTime.of(date, slotStartTime);
+                    LocalDateTime slotEnd = slotStart.plusMinutes(30);
+
+                    boolean isFuture = slotStart.isAfter(now);
+
+                    boolean overlapsAppointment = dayAppointments.stream()
+                            .filter(a -> isBlockingStatus(a.getStatus()))
+                            .anyMatch(a -> overlaps(a.getStartAt(), a.getEndAt(), slotStart, slotEnd));
+
+                    boolean available =  !overlapsAppointment && !dailyLimitReached;
+
+                    SlotDto slotDto = new SlotDto();
+                    slotDto.setTime(slotStartTime.toString());
+                    slotDto.setAvailable(available);
+
+                    slots.add(slotDto);
+
+                    slotStartTime = slotStartTime.plusMinutes(30);
+                }
+            }
+
+            DailyScheduleDto dayDto = new DailyScheduleDto();
+            dayDto.setDate(date);
+            dayDto.setSlots(slots);
+
+            days.add(dayDto);
+        }
+
+        WeeklyCalendarResponse response = new WeeklyCalendarResponse();
+        response.setDays(days);
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WeeklyCalendarResponse getWeeklyCalendarForCurrentDoctor(LocalDate weekStart) {
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+
+        DoctorProfile doctorProfile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        return getWeeklyCalendarForDoctor(doctorProfile.getId(), weekStart);
     }
 
     // ==================== Appointments ====================
@@ -306,31 +405,20 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Doctor profile with id=" + request.getDoctorId() + " not found"
                 ));
 
-        User doctorUser = doctorProfile.getUser();
-        if (doctorUser == null
-                || doctorUser.isDeleted()
-                || doctorUser.getStatus() != UserStatus.ACTIVE
-                || doctorUser.getRole() != Role.DOCTOR) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not active");
-        }
+        validateDoctorActive(doctorProfile);
 
-        // 1) Check within doctor's schedule
         if (!isWithinDoctorSchedule(doctorProfile.getId(), startAt, endAt)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not available at this time (outside schedule)");
         }
 
-        // 2) Check doctor is not double-booked (SCHEDULED appointments)
-        boolean hasOverlap = !appointmentRepository
-                .findByDoctorIdAndDeletedFalseAndStatusAndStartAtLessThanAndEndAtGreaterThan(
-                        doctorProfile.getId(),
-                        AppointmentStatus.SCHEDULED,
-                        endAt,
-                        startAt
-                )
-                .isEmpty();
+        List<Appointment> overlaps = appointmentRepository
+                .findByDoctorIdAndDeletedFalseAndStartAtLessThanAndEndAtGreaterThan(
+                        doctorProfile.getId(), endAt, startAt);
+
+        boolean hasOverlap = overlaps.stream().anyMatch(a -> isBlockingStatus(a.getStatus()));
 
         if (hasOverlap) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor already has an appointment at this time");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Doctor already has an appointment at this time");
         }
 
         Boolean tele = request.getTeleconsultation() != null && request.getTeleconsultation();
@@ -340,7 +428,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .patient(patientProfile)
                 .startAt(startAt)
                 .endAt(endAt)
-                .status(AppointmentStatus.SCHEDULED)
+                .status(AppointmentStatus.PENDING)
                 .reason(request.getReason())
                 .teleconsultation(tele)
                 .build();
@@ -424,18 +512,15 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to cancel this appointment");
         }
 
-        if (appt.getStatus() != AppointmentStatus.SCHEDULED) {
-            // For simplicity, we only allow cancel of SCHEDULED appointments
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only scheduled appointments can be cancelled");
+        AppointmentStatus st = appt.getStatus();
+        if (st == AppointmentStatus.CANCELED || st == AppointmentStatus.REJECTED || st == AppointmentStatus.FINISH) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a finalized appointment");
         }
 
-        appt.setStatus(AppointmentStatus.CANCELLED);
+        appt.setStatus(AppointmentStatus.CANCELED);
         appointmentRepository.save(appt);
     }
 
-    /**
-     * Doctor updates appointment status (e.g. ACCEPTED, REJECTED, COMPLETED, etc.).
-     */
     @Override
     @Transactional
     public AppointmentDto updateAppointmentStatus(Long appointmentId, AppointmentStatusUpdateRequest request) {
@@ -460,10 +545,6 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to update this appointment");
         }
 
-        if (appt.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cancelled appointments cannot be updated");
-        }
-
         AppointmentStatus newStatus;
         try {
             newStatus = AppointmentStatus.valueOf(request.getStatus().toUpperCase(Locale.ROOT));
@@ -474,15 +555,22 @@ public class AppointmentServiceImpl implements AppointmentService {
             );
         }
 
+        // === AUTO LINK PATIENT TO DOCTOR WHEN ACCEPTED ===
+        if (newStatus == AppointmentStatus.ACCEPTED) {
+            DoctorProfile doctorProfile = appt.getDoctor();
+            PatientProfile patientProfile = appt.getPatient();
+
+            if (!doctorProfile.getPatients().contains(patientProfile)) {
+                doctorProfile.getPatients().add(patientProfile);
+                doctorProfileRepository.save(doctorProfile);
+            }
+        }
+
         appt.setStatus(newStatus);
         Appointment saved = appointmentRepository.save(appt);
         return toAppointmentDto(saved);
     }
 
-    /**
-     * Reschedule an existing appointment (same doctor & patient).
-     * Only the doctor or the patient involved can reschedule.
-     */
     @Override
     @Transactional
     public AppointmentDto rescheduleAppointment(Long appointmentId, AppointmentCreateRequest request) {
@@ -525,8 +613,9 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to reschedule this appointment");
         }
 
-        if (appt.getStatus() != AppointmentStatus.SCHEDULED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only scheduled appointments can be rescheduled");
+        AppointmentStatus st = appt.getStatus();
+        if (st == AppointmentStatus.CANCELED || st == AppointmentStatus.REJECTED || st == AppointmentStatus.FINISH) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending or accepted appointments can be rescheduled");
         }
 
         DoctorProfile doctorProfile = appt.getDoctor();
@@ -534,38 +623,26 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor profile is not available");
         }
 
-        User apptDoctorUser = doctorProfile.getUser();
-        if (apptDoctorUser == null
-                || apptDoctorUser.isDeleted()
-                || apptDoctorUser.getStatus() != UserStatus.ACTIVE
-                || apptDoctorUser.getRole() != Role.DOCTOR) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not active");
-        }
+        validateDoctorActive(doctorProfile);
 
-        // Ensure doctorId is not changed during reschedule
         if (request.getDoctorId() != null && !request.getDoctorId().equals(doctorProfile.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change doctor when rescheduling");
         }
 
-        // Check within doctor's schedule
         if (!isWithinDoctorSchedule(doctorProfile.getId(), startAt, endAt)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not available at this time (outside schedule)");
         }
 
-        // Check overlapping with other SCHEDULED appointments (excluding this appointment)
         List<Appointment> overlaps = appointmentRepository
-                .findByDoctorIdAndDeletedFalseAndStatusAndStartAtLessThanAndEndAtGreaterThan(
-                        doctorProfile.getId(),
-                        AppointmentStatus.SCHEDULED,
-                        endAt,
-                        startAt
-                );
+                .findByDoctorIdAndDeletedFalseAndStartAtLessThanAndEndAtGreaterThan(
+                        doctorProfile.getId(), endAt, startAt);
 
         boolean hasOtherOverlap = overlaps.stream()
-                .anyMatch(other -> !other.getId().equals(appt.getId()));
+                .filter(a -> !a.getId().equals(appt.getId()))
+                .anyMatch(a -> isBlockingStatus(a.getStatus()));
 
         if (hasOtherOverlap) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor already has an appointment at this time");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Doctor already has an appointment at this time");
         }
 
         appt.setStartAt(startAt);
@@ -584,6 +661,16 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     // ==================== Helper methods ====================
 
+    private void validateDoctorActive(DoctorProfile doctorProfile) {
+        User doctorUser = doctorProfile.getUser();
+        if (doctorUser == null
+                || doctorUser.isDeleted()
+                || doctorUser.getStatus() != UserStatus.ACTIVE
+                || doctorUser.getRole() != Role.DOCTOR) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not active");
+        }
+    }
+
     private boolean isWithinDoctorSchedule(Long doctorId, LocalDateTime startAt, LocalDateTime endAt) {
         DayOfWeek dow = startAt.getDayOfWeek();
         LocalTime start = startAt.toLocalTime();
@@ -599,6 +686,18 @@ public class AppointmentServiceImpl implements AppointmentService {
         return slots.stream().anyMatch(s ->
                 !start.isBefore(s.getStartTime()) && !end.isAfter(s.getEndTime())
         );
+    }
+
+    private boolean isBlockingStatus(AppointmentStatus status) {
+        if (status == null) {
+            return true;
+        }
+        return status != AppointmentStatus.CANCELED && status != AppointmentStatus.REJECTED;
+    }
+
+    private boolean overlaps(LocalDateTime s1, LocalDateTime e1,
+                             LocalDateTime s2, LocalDateTime e2) {
+        return s1.isBefore(e2) && e1.isAfter(s2);
     }
 
     private DoctorScheduleDto toScheduleDto(DoctorSchedule s) {
@@ -674,9 +773,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .build();
     }
 
-    /**
-     * Simple internal helper to represent a free time range.
-     */
     private static class TimeRange {
         private final LocalDateTime start;
         private final LocalDateTime end;

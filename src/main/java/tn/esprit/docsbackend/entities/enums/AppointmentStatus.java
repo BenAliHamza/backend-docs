@@ -1,7 +1,9 @@
 package tn.esprit.docsbackend.entities.enums;
 
 public enum AppointmentStatus {
-    SCHEDULED,
-    CANCELLED,
-    COMPLETED
+    PENDING,
+    ACCEPTED,
+    REJECTED,
+    CANCELED,
+    FINISH
 }
