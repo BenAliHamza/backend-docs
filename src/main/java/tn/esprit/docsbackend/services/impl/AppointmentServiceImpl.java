@@ -505,19 +505,19 @@ public class AppointmentServiceImpl implements AppointmentService {
         User patientUser = appt.getPatient().getUser();
 
         Long currentUserId = currentUser.getId();
-        Long doctorUserId = (doctorUser != null) ? doctorUser.getId() : null;
-        Long patientUserId = (patientUser != null) ? patientUser.getId() : null;
+        Long doctorUserId = doctorUser != null ? doctorUser.getId() : null;
+        Long patientUserId = patientUser != null ? patientUser.getId() : null;
 
         if (!currentUserId.equals(doctorUserId) && !currentUserId.equals(patientUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to cancel this appointment");
         }
 
         AppointmentStatus st = appt.getStatus();
-        if (st == AppointmentStatus.CANCELED || st == AppointmentStatus.REJECTED || st == AppointmentStatus.FINISH) {
+        if (st == AppointmentStatus.REJECTED || st == AppointmentStatus.COMPLETED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a finalized appointment");
         }
 
-        appt.setStatus(AppointmentStatus.CANCELED);
+        appt.setStatus(AppointmentStatus.REJECTED); // updated
         appointmentRepository.save(appt);
     }
 
@@ -614,9 +614,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         AppointmentStatus st = appt.getStatus();
-        if (st == AppointmentStatus.CANCELED || st == AppointmentStatus.REJECTED || st == AppointmentStatus.FINISH) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending or accepted appointments can be rescheduled");
+        if (st == AppointmentStatus.REJECTED || st == AppointmentStatus.COMPLETED) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only pending or accepted appointments can be rescheduled"
+            );
         }
+
 
         DoctorProfile doctorProfile = appt.getDoctor();
         if (doctorProfile == null || doctorProfile.isDeleted()) {
@@ -690,10 +694,13 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private boolean isBlockingStatus(AppointmentStatus status) {
         if (status == null) {
-            return true;
+            return false;
         }
-        return status != AppointmentStatus.CANCELED && status != AppointmentStatus.REJECTED;
+        return status == AppointmentStatus.PENDING
+                || status == AppointmentStatus.ACCEPTED
+                || status == AppointmentStatus.COMPLETED;
     }
+
 
     private boolean overlaps(LocalDateTime s1, LocalDateTime e1,
                              LocalDateTime s2, LocalDateTime e2) {

@@ -1,10 +1,6 @@
 package tn.esprit.docsbackend.services;
 
-import tn.esprit.docsbackend.dto.doctor.DoctorPracticeSetupRequest;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
-import tn.esprit.docsbackend.dto.doctor.DoctorPublicProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorSearchResultDto;
+import tn.esprit.docsbackend.dto.doctor.*;
 import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
 
 import java.util.List;
@@ -69,4 +65,7 @@ public interface DoctorService {
      * Public profile for any doctor by doctor profile id.
      */
     DoctorPublicProfileDto getDoctorPublicProfile(Long doctorId);
+
+    DoctorHomeStatsDto getHomeStatsForCurrentDoctor();
+
 }

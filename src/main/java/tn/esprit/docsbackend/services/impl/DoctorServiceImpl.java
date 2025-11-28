@@ -5,29 +5,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
-import tn.esprit.docsbackend.dto.doctor.DoctorPublicProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorSearchResultDto;
+import tn.esprit.docsbackend.dto.doctor.*;
 import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
-import tn.esprit.docsbackend.entities.Act;
-import tn.esprit.docsbackend.entities.DoctorProfile;
-import tn.esprit.docsbackend.entities.PatientProfile;
-import tn.esprit.docsbackend.entities.Specialty;
-import tn.esprit.docsbackend.entities.User;
+import tn.esprit.docsbackend.entities.*;
+import tn.esprit.docsbackend.entities.enums.AppointmentStatus;
 import tn.esprit.docsbackend.entities.enums.Role;
 import tn.esprit.docsbackend.entities.enums.UserStatus;
 import tn.esprit.docsbackend.mappers.ActMapper;
 import tn.esprit.docsbackend.mappers.DoctorProfileMapper;
 import tn.esprit.docsbackend.mappers.PatientProfileMapper;
-import tn.esprit.docsbackend.repositories.ActRepository;
-import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
-import tn.esprit.docsbackend.repositories.PatientProfileRepository;
-import tn.esprit.docsbackend.repositories.SpecialtyRepository;
-import tn.esprit.docsbackend.repositories.UserRepository;
+import tn.esprit.docsbackend.repositories.*;
+import tn.esprit.docsbackend.services.AppointmentService;
 import tn.esprit.docsbackend.services.DoctorService;
 import tn.esprit.docsbackend.utils.SecurityUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +38,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final DoctorProfileMapper doctorProfileMapper;
     private final PatientProfileMapper patientProfileMapper;
     private final ActMapper actMapper;
+    private final AppointmentRepository appointmentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -386,4 +380,81 @@ public class DoctorServiceImpl implements DoctorService {
                 .acts(actDtos)
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DoctorHomeStatsDto getHomeStatsForCurrentDoctor() {
+
+        User currentUser = SecurityUtils.getCurrentUserWithRoleOrThrow(Role.DOCTOR);
+
+        DoctorProfile doctorProfile = doctorProfileRepository
+                .findByUserIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+
+        Long doctorId = doctorProfile.getId();
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Blocking statuses under the new enum
+        List<AppointmentStatus> blockingStatuses = List.of(
+                AppointmentStatus.PENDING,
+                AppointmentStatus.ACCEPTED,
+                AppointmentStatus.COMPLETED
+        );
+
+        // Fetch all doctor's appointments once (optimized)
+        List<Appointment> all = appointmentRepository
+                .findByDoctorIdAndDeletedFalseOrderByStartAtAsc(doctorId);
+
+        // 1️⃣ Today's appointments
+        long todayCount = all.stream()
+                .filter(a -> a.getStartAt() != null)
+                .filter(a -> a.getStartAt().toLocalDate().equals(today))
+                .filter(a -> blockingStatuses.contains(a.getStatus()))
+                .count();
+
+        // 2️⃣ This week (Monday → Sunday)
+        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        LocalDate sunday = monday.plusDays(6);
+
+        long weekCount = all.stream()
+                .filter(a -> a.getStartAt() != null)
+                .filter(a -> {
+                    LocalDate d = a.getStartAt().toLocalDate();
+                    return !d.isBefore(monday) && !d.isAfter(sunday);
+                })
+                .filter(a -> blockingStatuses.contains(a.getStatus()))
+                .count();
+
+        // 3️⃣ Total unique patients
+        long totalPatients = doctorProfile.getPatients().size();
+
+        // 4️⃣ Next upcoming appointment (ONLY PENDING or ACCEPTED)
+        Appointment next = all.stream()
+                .filter(a -> a.getStartAt() != null)
+                .filter(a -> a.getStartAt().isAfter(now))
+                .filter(a -> a.getStatus() == AppointmentStatus.PENDING
+                        || a.getStatus() == AppointmentStatus.ACCEPTED)
+                .findFirst()
+                .orElse(null);
+
+        String nextStart = (next != null) ? next.getStartAt().toString() : null;
+        String nextPatientName = null;
+
+        if (next != null && next.getPatient() != null && next.getPatient().getUser() != null) {
+            User p = next.getPatient().getUser();
+            nextPatientName = p.getFirstname() + " " + p.getLastname();
+        }
+
+        return DoctorHomeStatsDto.builder()
+                .todayAppointments(todayCount)
+                .weekAppointments(weekCount)
+                .totalPatients(totalPatients)
+                .nextAppointmentStart(nextStart)
+                .nextAppointmentPatientName(nextPatientName)
+                .build();
+    }
+
+
 }

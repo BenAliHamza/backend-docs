@@ -1,1026 +1,878 @@
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/AppointmentDto.java =====
-package tn.esprit.docsbackend.dto.appointment;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/DoctorScheduleController.java =====
+package tn.esprit.docsbackend.controllers;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import tn.esprit.docsbackend.entities.enums.AppointmentStatus;
-
-import java.time.LocalDateTime;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class AppointmentDto {
-
-    private Long id;
-
-    private Long doctorId;
-    private Long doctorUserId;
-    private String doctorFirstName;
-    private String doctorLastName;
-
-    private Long patientId;
-    private Long patientUserId;
-    private String patientFirstName;
-    private String patientLastName;
-
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
-
-    private AppointmentStatus status;
-
-    private String reason;
-    private Boolean teleconsultation;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/DoctorScheduleDto.java =====
-package tn.esprit.docsbackend.dto.appointment;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-/**
- * Simple weekly schedule slot for a doctor.
- * dayOfWeek: "MONDAY", "TUESDAY", ...
- * startTime / endTime: "HH:mm"
- */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class DoctorScheduleDto {
-
-    private Long id;
-    private String dayOfWeek;  // e.g. "MONDAY"
-    private String startTime;  // e.g. "08:00"
-    private String endTime;    // e.g. "12:00"
-    private Boolean active;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/AppointmentStatusUpdateRequest.java =====
-package tn.esprit.docsbackend.dto.appointment;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class AppointmentStatusUpdateRequest {
-    private String status; // ACCEPTED / REJECTED / COMPLETED
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/WeeklyCalendarResponse.java =====
-package tn.esprit.docsbackend.dto.appointment;
-
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.List;
-
-@Getter
-@Setter
-public class WeeklyCalendarResponse {
-    private List<DailyScheduleDto> days;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/AppointmentCreateRequest.java =====
-package tn.esprit.docsbackend.dto.appointment;
-
-import lombok.Data;
-
-import java.time.LocalDateTime;
-
-/**
- * Patient books an appointment with a doctor.
- */
-@Data
-public class AppointmentCreateRequest {
-
-    private Long doctorId;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
-    private String reason;
-    private Boolean teleconsultation;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/DailyScheduleDto.java =====
-package tn.esprit.docsbackend.dto.appointment;
-
-import lombok.Getter;
-import lombok.Setter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.appointment.DoctorScheduleDto;
+import tn.esprit.docsbackend.dto.appointment.WeeklyCalendarResponse;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.services.AppointmentService;
 
 import java.time.LocalDate;
-import java.util.List;
-
-@Getter
-@Setter
-public class DailyScheduleDto {
-    private LocalDate date;
-    private List<SlotDto> slots;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/appointment/SlotDto.java =====
-package tn.esprit.docsbackend.dto.appointment;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class SlotDto {
-    private String time;      // "08:30"
-    private boolean available;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/indicator/IndicatorTypeDto.java =====
-package tn.esprit.docsbackend.dto.indicator;
-
-import lombok.Data;
-
-@Data
-public class IndicatorTypeDto {
-    private Long id;
-    private String code;
-    private String name;
-    private String unit;
-    private String description;
-    private Boolean active;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/indicator/PatientIndicatorCreateRequest.java =====
-package tn.esprit.docsbackend.dto.indicator;
-
-import lombok.Data;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * Request body when a patient records a new measurement.
- */
-@Data
-public class PatientIndicatorCreateRequest {
-
-    private Long indicatorTypeId;          // required
-
-    private BigDecimal numericValue;       // at least one of numeric/text must be provided
-    private String textValue;
-
-    /**
-     * Optional custom timestamp. If null, backend will use now().
-     */
-    private LocalDateTime measuredAt;
-
-    private String note;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/indicator/PatientIndicatorDto.java =====
-package tn.esprit.docsbackend.dto.indicator;
-
-import lombok.Data;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-@Data
-public class PatientIndicatorDto {
-
-    private Long id;
-
-    private Long indicatorTypeId;
-    private String indicatorCode;
-    private String indicatorName;
-    private String unit;
-
-    private BigDecimal numericValue;
-    private String textValue;
-
-    private LocalDateTime measuredAt;
-
-    private String note;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/SignupRequest.java =====
-package tn.esprit.docsbackend.dto.auth;
-
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-import tn.esprit.docsbackend.entities.enums.Role;
-
-@Getter
-@Setter
-public class SignupRequest {
-
-    @NotBlank
-    @Size(max = 50)
-    private String firstname;
-
-    @NotBlank
-    @Size(max = 50)
-    private String lastname;
-
-    @NotBlank
-    @Email
-    @Size(max = 120)
-    private String email;
-
-    @Size(max = 20)
-    private String phone;
-
-    @NotBlank
-    @Size(min = 6, max = 100)
-    private String password;
-
-    /**
-     * Role to create: DOCTOR or PATIENT.
-     * ADMIN users should be created via admin flows, not public signup.
-     */
-    @NotNull
-    private Role role;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/LoginRequest.java =====
-package tn.esprit.docsbackend.dto.auth;
-
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class LoginRequest {
-
-    @NotBlank
-    @Email
-    @Size(max = 120)
-    private String email;
-
-    @NotBlank
-    @Size(min = 6, max = 100)
-    private String password;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/TokenResponse.java =====
-package tn.esprit.docsbackend.dto.auth;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-/**
- * Response carrying access and refresh tokens.
- */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class TokenResponse {
-
-    private String accessToken;
-
-    private String refreshToken;
-
-    /**
-     * Usually "Bearer".
-     */
-    @Builder.Default
-    private String tokenType = "Bearer";
-
-    /**
-     * Access token validity in seconds (optional, for client UX).
-     */
-    private Long expiresIn;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/auth/RefreshTokenRequest.java =====
-package tn.esprit.docsbackend.dto.auth;
-
-import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class RefreshTokenRequest {
-
-    @NotBlank
-    private String refreshToken;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/SpecialtyDto.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Builder
-public class SpecialtyDto {
-
-    private Long id;
-
-    private String code;
-
-    private String name;
-
-    private String description;
-
-    private Boolean active;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/ActDto.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.math.BigDecimal;
-
-@Getter
-@Setter
-@Builder
-public class ActDto {
-
-    private Long id;
-
-    private String code;
-
-    private String name;
-
-    private String description;
-
-    private BigDecimal basePrice;
-
-    private Integer defaultDurationMinutes;
-
-    private Boolean teleconsultationAvailable;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPracticeSetupRequest.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.List;
-
-/**
- * Request body for doctor onboarding step where they choose
- * their main specialty and the acts they perform.
- */
-@Getter
-@Setter
-public class DoctorPracticeSetupRequest {
-
-    @NotNull
-    private Long specialtyId;
-
-    @NotEmpty
-    private List<Long> actIds;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPublicProfileDto.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-/**
- * Public-facing doctor profile for patients/search.
- */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class DoctorPublicProfileDto {
-
-    private Long doctorId;
-    private Long userId;
-
-    // Basic identity
-    private String firstName;
-    private String lastName;
-    private String profileImageUrl;
-
-    // Professional info
-    private String specialtyName;
-    private Long specialtyId;
-    private String city;
-    private String country;
-    private String clinicAddress;
-    private String bio;
-    private Integer yearsOfExperience;
-    private BigDecimal consultationFee;
-    private Boolean acceptingNewPatients;
-    private Boolean teleconsultationEnabled;
-
-    // Acts
-    private List<ActDto> acts; // reuse existing dto.doctor.ActDto
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileUpdateRequest.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.math.BigDecimal;
-
-@Getter
-@Setter
-public class DoctorProfileUpdateRequest {
-
-    @Size(max = 1000)
-    private String bio;
-
-    private Integer yearsOfExperience;
-
-    @Size(max = 255)
-    private String clinicAddress;
-
-    @Size(max = 100)
-    private String city;
-
-    @Size(max = 100)
-    private String country;
-
-    @Size(max = 100)
-    private String medicalRegistrationNumber;
-
-    private BigDecimal consultationFee;
-
-    /**
-     * Whether this doctor currently accepts new patients.
-     */
-    private Boolean acceptsNewPatients;
-
-    /**
-     * Whether the doctor offers teleconsultation / remote visits.
-     */
-    private Boolean teleconsultationEnabled;
-
-    /**
-     * Soft limit for how many appointments per day this doctor usually takes.
-     */
-    private Integer maxDailyAppointments;
-
-    /**
-     * Default consultation duration in minutes.
-     */
-    private Integer averageConsultationDurationMinutes;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileDto.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-@Getter
-@Setter
-@Builder
-public class DoctorProfileDto {
-
-    private Long id;
-
-    private Long userId;
-
-    private String firstname;
-
-    private String lastname;
-
-    private String email;
-
-    private String phone;
-
-    private String bio;
-
-    private Integer yearsOfExperience;
-
-    private String clinicAddress;
-
-    private String city;
-
-    private String country;
-
-    private String medicalRegistrationNumber;
-
-    private BigDecimal consultationFee;
-
-    private Boolean acceptsNewPatients;
-
-    private Boolean teleconsultationEnabled;
-
-    private Integer maxDailyAppointments;
-
-    private Integer averageConsultationDurationMinutes;
-
-    /**
-     * Single main specialty of this doctor.
-     */
-    private SpecialtyDto specialty;
-
-    /**
-     * Acts/services this doctor offers.
-     */
-    private List<ActDto> acts;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorSearchResultDto.java =====
-package tn.esprit.docsbackend.dto.doctor;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-/**
- * Lightweight doctor row used in /api/doctors/search result list.
- */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class DoctorSearchResultDto {
-
-    // You can treat this as the doctor profile id
-    private Long doctorId;
-
-    // Linked User id (for auth, images, etc.)
-    private Long userId;
-
-    private String firstName;
-    private String lastName;
-
-    private String specialtyName;
-    private Long specialtyId;
-
-    private String city;
-    private String country;
-
-    private String profileImageUrl;   // from User.profileImage
-
-    private Boolean teleconsultationEnabled;
-    private Boolean acceptingNewPatients;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/ChangePasswordRequest.java =====
-package tn.esprit.docsbackend.dto.user;
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-
-/**
- * Request to change the password of the currently authenticated user.
- */
-@Getter
-@Setter
-public class ChangePasswordRequest {
-
-    @NotBlank
-    private String oldPassword;
-
-    @NotBlank
-    @Size(min = 6, max = 100)
-    private String newPassword;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/UserDto.java =====
-package tn.esprit.docsbackend.dto.user;
-
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import tn.esprit.docsbackend.entities.enums.Role;
-import tn.esprit.docsbackend.entities.enums.UserStatus;
-
-import java.time.LocalDateTime;
-
-@Getter
-@Setter
-@Builder
-public class UserDto {
-
-    private Long id;
-
-    private String firstname;
-
-    private String lastname;
-
-    private String email;
-
-    private String phone;
-
-    private String profileImage;
-
-    private Boolean isFirstLogin;
-
-    private Role role;
-
-    private UserStatus status;
-
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/user/UserUpdateRequest.java =====
-package tn.esprit.docsbackend.dto.user;
-
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-
-/**
- * Partial update for the base User fields.
- * All fields are optional; only non-null ones are applied.
- */
-@Getter
-@Setter
-public class UserUpdateRequest {
-
-    @Size(max = 50)
-    private String firstname;
-
-    @Size(max = 50)
-    private String lastname;
-
-    @Size(max = 20)
-    private String phone;
-
-    /**
-     * Optional email update. If provided and different, we check uniqueness.
-     */
-    @Email
-    @Size(max = 120)
-    private String email;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/common/ApiErrorResponse.java =====
-package tn.esprit.docsbackend.dto.common;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
-@Getter
-@Setter
-@Builder
-public class ApiErrorResponse {
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class DoctorScheduleController {
 
-    private LocalDateTime timestamp;
-
-    private int status;
-
-    private String error;
-
-    private String message;
-
-    private String path;
+    private final AppointmentService appointmentService;
 
     /**
-     * Optional map of field -> validation error messages.
+     * GET /api/doctors/me/schedule
+     * Current doctor -> weekly schedule (raw schedule entries).
      */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private Map<String, List<String>> fieldErrors;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/common/ListResponse.java =====
-package tn.esprit.docsbackend.dto.common;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.util.List;
-
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class ListResponse<T> {
-
-    private List<T> items;
-
-    private long total;
-
-    /**
-     * Convenience factory: builds a ListResponse with total = items.size().
-     */
-    public static <T> ListResponse<T> of(List<T> items) {
-        long total = (items != null) ? items.size() : 0L;
-        return new ListResponse<>(items, total);
+    @GetMapping("/doctors/me/schedule")
+    public ResponseEntity<ListResponse<DoctorScheduleDto>> getMySchedule() {
+        List<DoctorScheduleDto> list = appointmentService.getScheduleForCurrentDoctor();
+        return ResponseEntity.ok(ListResponse.of(list));
     }
 
     /**
-     * Optional overload if you ever want a custom total (e.g. for pagination).
+     * PUT /api/doctors/me/schedule
+     * Replace weekly schedule for current doctor.
      */
-    public static <T> ListResponse<T> of(List<T> items, long total) {
-        return new ListResponse<>(items, total);
+    @PutMapping("/doctors/me/schedule")
+    public ResponseEntity<ListResponse<DoctorScheduleDto>> updateMySchedule(
+            @RequestBody List<DoctorScheduleDto> entries
+    ) {
+        List<DoctorScheduleDto> list = appointmentService.updateScheduleForCurrentDoctor(entries);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    /**
+     * GET /api/doctors/{doctorId}/schedule
+     * Public: patient viewing a specific doctor's raw weekly schedule.
+     */
+    @GetMapping("/doctors/{doctorId}/schedule")
+    public ResponseEntity<ListResponse<DoctorScheduleDto>> getDoctorSchedule(@PathVariable Long doctorId) {
+        List<DoctorScheduleDto> list = appointmentService.getScheduleForDoctor(doctorId);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    /**
+     * GET /api/doctors/{doctorId}/available-slots
+     * Public: patient viewing a specific doctor's available appointment slots
+     * in a given date-time range (computed from schedule + existing appointments).
+     *
+     * Returns a list of "start/end" ISO-8601 strings.
+     */
+    @GetMapping("/doctors/{doctorId}/available-slots")
+    public ResponseEntity<ListResponse<String>> getDoctorAvailableSlots(
+            @PathVariable Long doctorId,
+            @RequestParam(name = "from")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        List<String> slots = appointmentService.getDoctorAvailableSlots(doctorId, from, to);
+        return ResponseEntity.ok(ListResponse.of(slots));
+    }
+
+    /**
+     * GET /api/doctors/{doctorId}/weekly-calendar
+     * Public weekly calendar for a doctor (patient-facing).
+     *
+     * weekStart: optional, if null -> current week (Monday as start).
+     */
+    @GetMapping("/doctors/{doctorId}/weekly-calendar")
+    public ResponseEntity<WeeklyCalendarResponse> getDoctorWeeklyCalendar(
+            @PathVariable Long doctorId,
+            @RequestParam(name = "weekStart", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+    ) {
+        WeeklyCalendarResponse response = appointmentService.getWeeklyCalendarForDoctor(doctorId, weekStart);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/doctors/me/weekly-calendar
+     * Weekly calendar for the currently authenticated doctor (shortcut).
+     */
+    @GetMapping("/doctors/me/weekly-calendar")
+    public ResponseEntity<WeeklyCalendarResponse> getMyWeeklyCalendar(
+            @RequestParam(name = "weekStart", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+    ) {
+        WeeklyCalendarResponse response = appointmentService.getWeeklyCalendarForCurrentDoctor(weekStart);
+        return ResponseEntity.ok(response);
     }
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/patient/PatientProfileDto.java =====
-package tn.esprit.docsbackend.dto.patient;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/ActController.java =====
+package tn.esprit.docsbackend.controllers;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import tn.esprit.docsbackend.dto.doctor.ActDto;
+import tn.esprit.docsbackend.services.ActService;
 
-import java.time.LocalDate;
-
-@Getter
-@Setter
-@Builder
-public class PatientProfileDto {
-
-    private Long id;
-
-    private Long userId;
-
-    private String firstname;
-
-    private String lastname;
-
-    private String email;
-
-    private String phone;
-
-    private LocalDate dateOfBirth;
-
-    private String gender;
-
-    private String bloodType;
-
-    private Integer heightCm;
-
-    private Integer weightKg;
-
-    private String address;
-
-    private String city;
-
-    private String country;
-
-    private String maritalStatus;
-
-    private Boolean smoker;
-
-    private Boolean alcoholUse;
-
-    private String notes;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/patient/PatientProfileUpdateRequest.java =====
-package tn.esprit.docsbackend.dto.patient;
-
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDate;
-
-@Getter
-@Setter
-public class PatientProfileUpdateRequest {
-
-    private LocalDate dateOfBirth;
-
-    @Size(max = 20)
-    private String gender;
-
-    @Size(max = 10)
-    private String bloodType;
-
-    private Integer heightCm;
-
-    private Integer weightKg;
-
-    @Size(max = 255)
-    private String address;
-
-    @Size(max = 100)
-    private String city;
-
-    @Size(max = 100)
-    private String country;
-
-    @Size(max = 30)
-    private String maritalStatus;
-
-    private Boolean smoker;
-
-    private Boolean alcoholUse;
-
-    @Size(max = 1000)
-    private String notes;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/medication/PrescriptionDto.java =====
-package tn.esprit.docsbackend.dto.medication;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 import java.util.List;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class PrescriptionDto {
+/**
+ * Endpoints related to acts/services.
+ */
+@RestController
+@RequiredArgsConstructor
+public class ActController {
 
-    private Long id;
+    private final ActService actService;
 
-    private Long doctorId;
-    private Long doctorUserId;
-    private String doctorFirstName;
-    private String doctorLastName;
-
-    private Long patientId;
-    private Long patientUserId;
-    private String patientFirstName;
-    private String patientLastName;
-
-    private LocalDate startDate;
-    private LocalDate endDate;
-
-    private String note;
-
-    private List<PrescriptionLineDto> lines;
+    /**
+     * Returns the acts/services available for the currently authenticated doctor.
+     *
+     * GET /doctors/me/acts
+     */
+    @GetMapping("/doctors/me/acts")
+    public ResponseEntity<List<ActDto>> getMyActs() {
+        List<ActDto> acts = actService.getActsForCurrentDoctor();
+        return ResponseEntity.ok(acts);
+    }
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/medication/PrescriptionLineCreateRequest.java =====
-package tn.esprit.docsbackend.dto.medication;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/AppointmentController.java =====
+package tn.esprit.docsbackend.controllers;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.appointment.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.services.AppointmentService;
 
-@Data
-public class PrescriptionLineCreateRequest {
-
-    private Long medicationId;
-    private String dosage;
-    private Integer timesPerDay;
-    private String instructions;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/medication/PrescriptionLineDto.java =====
-package tn.esprit.docsbackend.dto.medication;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class PrescriptionLineDto {
-
-    private Long id;
-
-    private Long prescriptionId;
-    private LocalDate prescriptionStartDate;
-    private LocalDate prescriptionEndDate;
-
-    private Long medicationId;
-    private String medicationName;
-
-    private String dosage;
-    private Integer timesPerDay;
-    private String instructions;
-
-    private Boolean reminderEnabled;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/medication/PrescriptionLineReminderUpdateRequest.java =====
-package tn.esprit.docsbackend.dto.medication;
-
-import lombok.Data;
-
-@Data
-public class PrescriptionLineReminderUpdateRequest {
-
-    private Boolean reminderEnabled;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/medication/MedicationDto.java =====
-package tn.esprit.docsbackend.dto.medication;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class MedicationDto {
-
-    private Long id;
-    private String code;
-    private String name;
-    private String description;
-    private Boolean active;
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/dto/medication/PrescriptionCreateRequest.java =====
-package tn.esprit.docsbackend.dto.medication;
-
-import lombok.Data;
-
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
-public class PrescriptionCreateRequest {
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class AppointmentController {
 
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private String note;
-    private List<PrescriptionLineCreateRequest> lines;
+    private final AppointmentService appointmentService;
+
+    @PostMapping("/appointments")
+    public ResponseEntity<AppointmentDto> createAppointment(@RequestBody AppointmentCreateRequest request) {
+        AppointmentDto dto = appointmentService.createAppointmentAsCurrentPatient(request);
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/appointments/me")
+    public ResponseEntity<ListResponse<AppointmentDto>> getMyAppointments(
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        List<AppointmentDto> list = appointmentService.getAppointmentsForCurrentPatient(from, to);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    @GetMapping("/doctors/me/appointments")
+    public ResponseEntity<ListResponse<AppointmentDto>> getDoctorAppointments(
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        List<AppointmentDto> list = appointmentService.getAppointmentsForCurrentDoctor(from, to);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    @DeleteMapping("/appointments/{id}")
+    public ResponseEntity<Void> cancelAppointment(@PathVariable("id") Long id) {
+        appointmentService.cancelAppointment(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // -------- NEW ENDPOINT: doctor updates appointment status --------
+    @PatchMapping("/appointments/{id}/status")
+    public ResponseEntity<AppointmentDto> updateAppointmentStatus(
+            @PathVariable("id") Long id,
+            @RequestBody AppointmentStatusUpdateRequest request
+    ) {
+        AppointmentDto dto = appointmentService.updateAppointmentStatus(id, request);
+        return ResponseEntity.ok(dto);
+    }
+
+    // -------- NEW ENDPOINT: reschedule appointment --------
+    @PutMapping("/appointments/{id}")
+    public ResponseEntity<AppointmentDto> rescheduleAppointment(
+            @PathVariable("id") Long id,
+            @RequestBody AppointmentCreateRequest request
+    ) {
+        AppointmentDto dto = appointmentService.rescheduleAppointment(id, request);
+        return ResponseEntity.ok(dto);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/MedicationController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.dto.medication.MedicationDto;
+import tn.esprit.docsbackend.services.MedicationService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/medications")
+@RequiredArgsConstructor
+public class MedicationController {
+
+    private final MedicationService medicationService;
+
+    @GetMapping
+    public ResponseEntity<ListResponse<MedicationDto>> getMedications(
+            @RequestParam(name = "q", required = false) String query
+    ) {
+        List<MedicationDto> list = medicationService.getMedications(query);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MedicationDto> getMedication(@PathVariable Long id) {
+        MedicationDto dto = medicationService.getMedication(id);
+        return ResponseEntity.ok(dto);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/AuthController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.auth.LoginRequest;
+import tn.esprit.docsbackend.dto.auth.RefreshTokenRequest;
+import tn.esprit.docsbackend.dto.auth.SignupRequest;
+import tn.esprit.docsbackend.dto.auth.TokenResponse;
+import tn.esprit.docsbackend.services.AuthService;
+
+@RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/signup")
+    public ResponseEntity<TokenResponse> signup(@Valid @RequestBody SignupRequest request) {
+        TokenResponse response = authService.signup(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
+        TokenResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        TokenResponse response = authService.refresh(request);
+        return ResponseEntity.ok(response);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/DoctorPrescriptionController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.dto.medication.PrescriptionCreateRequest;
+import tn.esprit.docsbackend.dto.medication.PrescriptionDto;
+import tn.esprit.docsbackend.services.PrescriptionService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/doctors/me")
+@RequiredArgsConstructor
+public class DoctorPrescriptionController {
+
+    private final PrescriptionService prescriptionService;
+
+    /**
+     * POST /api/doctors/me/patients/{patientUserId}/prescriptions
+     */
+    @PostMapping("/patients/{patientUserId}/prescriptions")
+    public ResponseEntity<PrescriptionDto> createPrescriptionForPatient(
+            @PathVariable Long patientUserId,
+            @RequestBody PrescriptionCreateRequest request
+    ) {
+        PrescriptionDto dto = prescriptionService
+                .createPrescriptionForCurrentDoctorPatient(patientUserId, request);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * GET /api/doctors/me/patients/{patientUserId}/prescriptions?activeOnly=true
+     */
+    @GetMapping("/patients/{patientUserId}/prescriptions")
+    public ResponseEntity<ListResponse<PrescriptionDto>> getPrescriptionsForPatient(
+            @PathVariable Long patientUserId,
+            @RequestParam(name = "activeOnly", required = false) Boolean activeOnly
+    ) {
+        List<PrescriptionDto> list = prescriptionService
+                .getPrescriptionsForCurrentDoctorPatient(patientUserId, activeOnly);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    /**
+     * GET /api/doctors/me/prescriptions/{prescriptionId}
+     */
+    @GetMapping("/prescriptions/{prescriptionId}")
+    public ResponseEntity<PrescriptionDto> getPrescription(
+            @PathVariable Long prescriptionId
+    ) {
+        PrescriptionDto dto = prescriptionService.getPrescriptionForCurrentDoctor(prescriptionId);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * DELETE /api/doctors/me/prescriptions/{prescriptionId}
+     */
+    @DeleteMapping("/prescriptions/{prescriptionId}")
+    public ResponseEntity<Void> deletePrescription(
+            @PathVariable Long prescriptionId
+    ) {
+        prescriptionService.deletePrescriptionForCurrentDoctor(prescriptionId);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/PatientPrescriptionController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.dto.medication.PrescriptionDto;
+import tn.esprit.docsbackend.dto.medication.PrescriptionLineDto;
+import tn.esprit.docsbackend.dto.medication.PrescriptionLineReminderUpdateRequest;
+import tn.esprit.docsbackend.services.PrescriptionService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/prescriptions/me")
+@RequiredArgsConstructor
+public class PatientPrescriptionController {
+
+    private final PrescriptionService prescriptionService;
+
+    /**
+     * GET /api/prescriptions/me?activeOnly=true
+     */
+    @GetMapping
+    public ResponseEntity<ListResponse<PrescriptionDto>> getMyPrescriptions(
+            @RequestParam(name = "activeOnly", required = false) Boolean activeOnly
+    ) {
+        List<PrescriptionDto> list = prescriptionService
+                .getPrescriptionsForCurrentPatient(activeOnly);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    /**
+     * GET /api/prescriptions/me/{prescriptionId}
+     */
+    @GetMapping("/{prescriptionId}")
+    public ResponseEntity<PrescriptionDto> getMyPrescription(
+            @PathVariable Long prescriptionId
+    ) {
+        PrescriptionDto dto = prescriptionService.getPrescriptionForCurrentPatient(prescriptionId);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * GET /api/prescriptions/me/lines/active
+     */
+    @GetMapping("/lines/active")
+    public ResponseEntity<ListResponse<PrescriptionLineDto>> getMyActiveLines() {
+        List<PrescriptionLineDto> list = prescriptionService.getActiveLinesForCurrentPatient();
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    /**
+     * PATCH /api/prescriptions/me/lines/{lineId}/reminder
+     */
+    @PatchMapping("/lines/{lineId}/reminder")
+    public ResponseEntity<PrescriptionLineDto> updateLineReminder(
+            @PathVariable Long lineId,
+            @RequestBody PrescriptionLineReminderUpdateRequest request
+    ) {
+        PrescriptionLineDto dto = prescriptionService
+                .updateReminderForCurrentPatientLine(lineId, request.getReminderEnabled());
+        return ResponseEntity.ok(dto);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/DoctorController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.dto.doctor.*;
+import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+import tn.esprit.docsbackend.services.DoctorService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/doctors")
+@RequiredArgsConstructor
+public class DoctorController {
+
+    private final DoctorService doctorService;
+
+    /**
+     * GET /api/doctors/me
+     * Current doctor's own profile.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<DoctorProfileDto> getMyProfile() {
+        return ResponseEntity.ok(doctorService.getCurrentDoctorProfile());
+    }
+
+    /**
+     * PUT /api/doctors/me
+     * Partial update of current doctor's profile.
+     */
+    @PutMapping("/me")
+    public ResponseEntity<DoctorProfileDto> updateMyProfile(
+            @RequestBody DoctorProfileUpdateRequest request
+    ) {
+        return ResponseEntity.ok(doctorService.updateCurrentDoctorProfile(request));
+    }
+
+    /**
+     * GET /api/doctors/me/patients
+     * All patients linked to current doctor.
+     */
+    @GetMapping("/me/patients")
+    public ResponseEntity<ListResponse<PatientProfileDto>> getMyPatients() {
+        List<PatientProfileDto> patients = doctorService.getPatientsOfCurrentDoctor();
+        return ResponseEntity.ok(ListResponse.of(patients));
+    }
+
+    /**
+     * GET /api/doctors/me/patients/{patientUserId}
+     * Details of ONE patient (by User.id) linked to current doctor.
+     */
+    @GetMapping("/me/patients/{patientUserId}")
+    public ResponseEntity<PatientProfileDto> getMyPatientByUserId(
+            @PathVariable Long patientUserId
+    ) {
+        PatientProfileDto dto = doctorService.getPatientOfCurrentDoctor(patientUserId);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * POST /api/doctors/me/patients/{patientUserId}
+     * Link a patient (by User.id) to current doctor.
+     */
+    @PostMapping("/me/patients/{patientUserId}")
+    public ResponseEntity<Void> addPatientToMe(
+            @PathVariable Long patientUserId
+    ) {
+        doctorService.addPatientToCurrentDoctor(patientUserId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * DELETE /api/doctors/me/patients/{patientUserId}
+     * Remove link between current doctor and a patient.
+     */
+    @DeleteMapping("/me/patients/{patientUserId}")
+    public ResponseEntity<Void> removePatientFromMe(
+            @PathVariable Long patientUserId
+    ) {
+        doctorService.removePatientFromCurrentDoctor(patientUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * POST /api/doctors/me/practice-setup
+     * Simple onboarding: select one specialty + a set of acts.
+     */
+    @PostMapping("/me/practice-setup")
+    public ResponseEntity<DoctorProfileDto> setupPracticeForMe(
+            @RequestBody DoctorPracticeSetupRequest request
+    ) {
+        DoctorProfileDto dto = doctorService.setupPracticeForCurrentDoctor(
+                request.getSpecialtyId(),
+                request.getActIds()
+        );
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * GET /api/doctors/search
+     * Public search of doctors.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ListResponse<DoctorSearchResultDto>> searchDoctors(
+            @RequestParam(name = "q", required = false) String query,
+            @RequestParam(name = "specialtyId", required = false) Long specialtyId,
+            @RequestParam(name = "city", required = false) String city,
+            @RequestParam(name = "country", required = false) String country,
+            @RequestParam(name = "teleconsultationEnabled", required = false) Boolean teleconsultationEnabled,
+            @RequestParam(name = "acceptingNewPatients", required = false) Boolean acceptingNewPatients
+    ) {
+        List<DoctorSearchResultDto> results = doctorService.searchDoctors(
+                query,
+                specialtyId,
+                city,
+                country,
+                teleconsultationEnabled,
+                acceptingNewPatients
+        );
+        return ResponseEntity.ok(ListResponse.of(results));
+    }
+
+    /**
+     * GET /api/doctors/{doctorId}/public
+     * Public profile for a doctor.
+     */
+    @GetMapping("/{doctorId}/public")
+    public ResponseEntity<DoctorPublicProfileDto> getDoctorPublicProfile(
+            @PathVariable Long doctorId
+    ) {
+        DoctorPublicProfileDto dto = doctorService.getDoctorPublicProfile(doctorId);
+        return ResponseEntity.ok(dto);
+    }
+
+
+    @GetMapping("/me/home-stats")
+    public ResponseEntity<DoctorHomeStatsDto> getMyHomeStats() {
+        return ResponseEntity.ok(doctorService.getHomeStatsForCurrentDoctor());
+    }
+
+}
+
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/PatientController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
+import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
+import tn.esprit.docsbackend.dto.patient.PatientProfileUpdateRequest;
+import tn.esprit.docsbackend.services.PatientService;
+
+import java.util.List;
+
+/**
+ * Endpoints for operations related to patients themselves.
+ */
+@RestController
+@RequiredArgsConstructor
+public class PatientController {
+
+    private final PatientService patientService;
+
+    /**
+     * Returns the profile of the currently authenticated patient.
+     *
+     * GET /patients/me
+     */
+    @GetMapping("/patients/me")
+    public ResponseEntity<PatientProfileDto> getMyProfile() {
+        PatientProfileDto dto = patientService.getCurrentPatientProfile();
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Partially update the profile of the currently authenticated patient.
+     *
+     * PUT /patients/me
+     */
+    @PutMapping("/patients/me")
+    public ResponseEntity<PatientProfileDto> updateMyProfile(
+            @Valid @RequestBody PatientProfileUpdateRequest request
+    ) {
+        PatientProfileDto updated = patientService.updateCurrentPatientProfile(request);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Returns the list of doctors linked to the currently authenticated patient.
+     *
+     * GET /patients/me/doctors
+     */
+    @GetMapping("/patients/me/doctors")
+    public ResponseEntity<List<DoctorProfileDto>> getMyDoctors() {
+        List<DoctorProfileDto> doctors = patientService.getDoctorsOfCurrentPatient();
+        return ResponseEntity.ok(doctors);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/UserImageController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import tn.esprit.docsbackend.dto.user.UserDto;
+import tn.esprit.docsbackend.services.UserImageService;
+
+/**
+ * Endpoints related specifically to user profile images.
+ */
+@RestController
+@RequiredArgsConstructor
+public class UserImageController {
+
+    private final UserImageService userImageService;
+
+    /**
+     * Upload or replace the current user's profile image.
+     *
+     * Endpoint:
+     *   POST /users/me/profile-image
+     *
+     * Request:
+     *   multipart/form-data with field "image"
+     *
+     * Response:
+     *   UserDto (with updated profileImage URL)
+     */
+    @PostMapping("/users/me/profile-image")
+    public ResponseEntity<UserDto> uploadMyProfileImage(
+            @RequestParam("image") MultipartFile image
+    ) {
+        UserDto updatedUser = userImageService.uploadCurrentUserProfileImage(image);
+        return ResponseEntity.ok(updatedUser);
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/IndicatorController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.dto.indicator.IndicatorTypeDto;
+import tn.esprit.docsbackend.dto.indicator.PatientIndicatorCreateRequest;
+import tn.esprit.docsbackend.dto.indicator.PatientIndicatorDto;
+import tn.esprit.docsbackend.services.PatientIndicatorService;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping
+@RequiredArgsConstructor
+public class IndicatorController {
+
+    private final PatientIndicatorService patientIndicatorService;
+
+    /**
+     * Static catalog of available indicator types.
+     * GET /indicator-types
+     */
+    @GetMapping("/indicator-types")
+    public ResponseEntity<ListResponse<IndicatorTypeDto>> getIndicatorTypes() {
+        List<IndicatorTypeDto> types = patientIndicatorService.getAllIndicatorTypes();
+        return ResponseEntity.ok(ListResponse.of(types));
+    }
+
+    /**
+     * Current patient adds a new indicator measurement.
+     * POST /indicators/me
+     */
+    @PostMapping("/indicators/me")
+    public ResponseEntity<PatientIndicatorDto> addIndicatorForMe(
+            @RequestBody PatientIndicatorCreateRequest request
+    ) {
+        PatientIndicatorDto dto = patientIndicatorService.addIndicatorForCurrentPatient(request);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Current patient lists their own indicators.
+     * Optional query params: indicatorTypeId, from, to
+     * GET /indicators/me
+     */
+    @GetMapping("/indicators/me")
+    public ResponseEntity<ListResponse<PatientIndicatorDto>> getIndicatorsForMe(
+            @RequestParam(name = "indicatorTypeId", required = false) Long indicatorTypeId,
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        List<PatientIndicatorDto> list =
+                patientIndicatorService.getIndicatorsForCurrentPatient(indicatorTypeId, from, to);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+
+    /**
+     * Delete one of *my* indicators (soft delete).
+     *
+     * DELETE /indicators/me/{id}
+     *
+     * - Only works for the currently authenticated PATIENT.
+     * - Should return 204 NO_CONTENT on success.
+     * - Service is responsible for:
+     *      - checking ownership
+     *      - checking not already deleted
+     *      - throwing 404 / 403 when appropriate.
+     */
+    @DeleteMapping("/indicators/me/{id}")
+    public ResponseEntity<Void> deleteIndicatorForMe(@PathVariable("id") Long id) {
+        patientIndicatorService.deleteIndicatorForCurrentPatient(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Doctor lists indicators of a given patient (by patient User.id).
+     * Requires current user to be DOCTOR and linked to that patient.
+     *
+     * GET /indicators/patient/{patientUserId}
+     */
+    @GetMapping("/indicators/patient/{patientUserId}")
+    public ResponseEntity<ListResponse<PatientIndicatorDto>> getIndicatorsForPatientAsDoctor(
+            @PathVariable Long patientUserId,
+            @RequestParam(name = "indicatorTypeId", required = false) Long indicatorTypeId,
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        List<PatientIndicatorDto> list =
+                patientIndicatorService.getIndicatorsForPatientAsDoctor(patientUserId, indicatorTypeId, from, to);
+        return ResponseEntity.ok(ListResponse.of(list));
+    }
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/UserController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.esprit.docsbackend.dto.common.ListResponse;
+import tn.esprit.docsbackend.dto.user.ChangePasswordRequest;
+import tn.esprit.docsbackend.dto.user.UserDto;
+import tn.esprit.docsbackend.dto.user.UserUpdateRequest;
+import tn.esprit.docsbackend.services.UserService;
+
+/**
+ * Endpoints related to the base User entity (common to doctors & patients).
+ *
+ * NOTE:
+ * - Doctor-specific fields: use DoctorController / DoctorProfile endpoints.
+ * - Patient-specific fields: use PatientController / PatientProfile endpoints.
+ */
+@RestController
+@RequestMapping()
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    /**
+     * Get info about the currently authenticated user.
+     */
+    @GetMapping("/me")
+    public UserDto getCurrentUser() {
+        return userService.getCurrentUser();
+    }
+
+    /**
+     * Partially update base user fields (firstname, lastname, phone, email) for the current user.
+     */
+    @PutMapping("/me")
+    public UserDto updateCurrentUser(@Valid @RequestBody UserUpdateRequest request) {
+        return userService.updateCurrentUser(request);
+    }
+
+    /**
+     * Change password for the current user.
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    // If you already had other endpoints in this controller (admin list users, get by id, etc.),
+    // just merge them back into this class. The important part here is the /me and /change-password endpoints.
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/SpecialtyController.java =====
+package tn.esprit.docsbackend.controllers;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import tn.esprit.docsbackend.dto.doctor.ActDto;
+import tn.esprit.docsbackend.dto.doctor.SpecialtyDto;
+import tn.esprit.docsbackend.services.ActService;
+import tn.esprit.docsbackend.services.SpecialtyService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/specialties")
+@RequiredArgsConstructor
+public class SpecialtyController {
+
+    private final SpecialtyService specialtyService;
+    private final ActService actService;
+
+    @GetMapping
+    public List<SpecialtyDto> getAllSpecialties() {
+        return specialtyService.getAllSpecialties();
+    }
+
+    /**
+     * Returns acts for the current doctor filtered by the given specialty.
+     * Used in onboarding: after doctor selects specialty, we show available acts.
+     */
+    @GetMapping("/{specialtyId}/acts")
+    public List<ActDto> getActsForSpecialtyForCurrentDoctor(@PathVariable Long specialtyId) {
+        return actService.getActsBySpecialtyId(specialtyId);
+    }
 }
 
 

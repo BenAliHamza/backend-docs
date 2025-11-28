@@ -4,11 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.doctor.DoctorPracticeSetupRequest;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileUpdateRequest;
-import tn.esprit.docsbackend.dto.doctor.DoctorPublicProfileDto;
-import tn.esprit.docsbackend.dto.doctor.DoctorSearchResultDto;
+import tn.esprit.docsbackend.dto.doctor.*;
 import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
 import tn.esprit.docsbackend.services.DoctorService;
 
@@ -137,5 +133,12 @@ public class DoctorController {
         DoctorPublicProfileDto dto = doctorService.getDoctorPublicProfile(doctorId);
         return ResponseEntity.ok(dto);
     }
+
+
+    @GetMapping("/me/home-stats")
+    public ResponseEntity<DoctorHomeStatsDto> getMyHomeStats() {
+        return ResponseEntity.ok(doctorService.getHomeStatsForCurrentDoctor());
+    }
+
 }
 
