@@ -20,6 +20,8 @@ import tn.esprit.docsbackend.entities.User;
 import tn.esprit.docsbackend.entities.enums.AppointmentStatus;
 import tn.esprit.docsbackend.entities.enums.Role;
 import tn.esprit.docsbackend.entities.enums.UserStatus;
+import tn.esprit.docsbackend.notifications.AppointmentEventType;
+import tn.esprit.docsbackend.notifications.NotificationEventPublisher;
 import tn.esprit.docsbackend.repositories.AppointmentRepository;
 import tn.esprit.docsbackend.repositories.DoctorProfileRepository;
 import tn.esprit.docsbackend.repositories.DoctorScheduleRepository;
@@ -46,6 +48,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
     private final UserRepository userRepository;
+
+    private final NotificationEventPublisher notificationEventPublisher;
 
     // ==================== Doctor schedule ====================
 
@@ -333,7 +337,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                             .filter(a -> isBlockingStatus(a.getStatus()))
                             .anyMatch(a -> overlaps(a.getStartAt(), a.getEndAt(), slotStart, slotEnd));
 
-                    boolean available =  !overlapsAppointment && !dailyLimitReached;
+                    boolean available = isFuture && !overlapsAppointment && !dailyLimitReached;
 
                     SlotDto slotDto = new SlotDto();
                     slotDto.setTime(slotStartTime.toString());
@@ -434,6 +438,10 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .build();
 
         Appointment saved = appointmentRepository.save(entity);
+
+        // Notify doctor: new appointment requested
+        notificationEventPublisher.publishToDoctor(AppointmentEventType.CREATED, saved);
+
         return toAppointmentDto(saved);
     }
 
@@ -517,8 +525,15 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a finalized appointment");
         }
 
-        appt.setStatus(AppointmentStatus.REJECTED); // updated
-        appointmentRepository.save(appt);
+        appt.setStatus(AppointmentStatus.REJECTED); // using REJECTED as cancelled
+        Appointment saved = appointmentRepository.save(appt);
+
+        // Notify the other party about cancellation
+        if (currentUserId.equals(doctorUserId)) {
+            notificationEventPublisher.publishToPatient(AppointmentEventType.CANCELLED, saved);
+        } else if (currentUserId.equals(patientUserId)) {
+            notificationEventPublisher.publishToDoctor(AppointmentEventType.CANCELLED, saved);
+        }
     }
 
     @Override
@@ -568,6 +583,14 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appt.setStatus(newStatus);
         Appointment saved = appointmentRepository.save(appt);
+
+        // Notify patient about status change
+        if (newStatus == AppointmentStatus.ACCEPTED) {
+            notificationEventPublisher.publishToPatient(AppointmentEventType.ACCEPTED, saved);
+        } else if (newStatus == AppointmentStatus.REJECTED) {
+            notificationEventPublisher.publishToPatient(AppointmentEventType.REJECTED, saved);
+        }
+
         return toAppointmentDto(saved);
     }
 
@@ -621,7 +644,6 @@ public class AppointmentServiceImpl implements AppointmentService {
             );
         }
 
-
         DoctorProfile doctorProfile = appt.getDoctor();
         if (doctorProfile == null || doctorProfile.isDeleted()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor profile is not available");
@@ -660,6 +682,14 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         Appointment saved = appointmentRepository.save(appt);
+
+        // Notify the other party about reschedule
+        if (currentUserId.equals(doctorUserId)) {
+            notificationEventPublisher.publishToPatient(AppointmentEventType.RESCHEDULED, saved);
+        } else if (currentUserId.equals(patientUserId)) {
+            notificationEventPublisher.publishToDoctor(AppointmentEventType.RESCHEDULED, saved);
+        }
+
         return toAppointmentDto(saved);
     }
 
@@ -700,7 +730,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 || status == AppointmentStatus.ACCEPTED
                 || status == AppointmentStatus.COMPLETED;
     }
-
 
     private boolean overlaps(LocalDateTime s1, LocalDateTime e1,
                              LocalDateTime s2, LocalDateTime e2) {

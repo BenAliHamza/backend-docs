@@ -1,878 +1,287 @@
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/DoctorScheduleController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/DoctorScheduleRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.appointment.DoctorScheduleDto;
-import tn.esprit.docsbackend.dto.appointment.WeeklyCalendarResponse;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.services.AppointmentService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.DoctorSchedule;
 
-import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.util.List;
+
+public interface DoctorScheduleRepository extends JpaRepository<DoctorSchedule, Long> {
+
+    List<DoctorSchedule> findByDoctorIdAndDeletedFalseAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(Long doctorId);
+
+    List<DoctorSchedule> findByDoctorIdAndDeletedFalseAndActiveTrueAndDayOfWeekOrderByStartTimeAsc(
+            Long doctorId,
+            DayOfWeek dayOfWeek
+    );
+
+    boolean existsByDoctorIdAndDeletedFalse(Long doctorId);
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/PrescriptionLineRepository.java =====
+package tn.esprit.docsbackend.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.PrescriptionLine;
+
+public interface PrescriptionLineRepository extends JpaRepository<PrescriptionLine, Long> {
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/MedicationRepository.java =====
+package tn.esprit.docsbackend.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.Medication;
+
+import java.util.List;
+
+public interface MedicationRepository extends JpaRepository<Medication, Long> {
+
+    List<Medication> findByDeletedFalseAndActiveTrueOrderByNameAsc();
+
+    List<Medication> findByDeletedFalseAndActiveTrueAndNameContainingIgnoreCaseOrderByNameAsc(String name);
+
+    boolean existsByNameIgnoreCaseAndDeletedFalse(String name);
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/RefreshTokenRepository.java =====
+package tn.esprit.docsbackend.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.RefreshToken;
+
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
-@RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
-public class DoctorScheduleController {
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-    private final AppointmentService appointmentService;
+    Optional<RefreshToken> findByTokenAndRevokedFalseAndDeletedFalse(String token);
 
-    /**
-     * GET /api/doctors/me/schedule
-     * Current doctor -> weekly schedule (raw schedule entries).
-     */
-    @GetMapping("/doctors/me/schedule")
-    public ResponseEntity<ListResponse<DoctorScheduleDto>> getMySchedule() {
-        List<DoctorScheduleDto> list = appointmentService.getScheduleForCurrentDoctor();
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
+    void deleteByUserId(Long userId);
 
-    /**
-     * PUT /api/doctors/me/schedule
-     * Replace weekly schedule for current doctor.
-     */
-    @PutMapping("/doctors/me/schedule")
-    public ResponseEntity<ListResponse<DoctorScheduleDto>> updateMySchedule(
-            @RequestBody List<DoctorScheduleDto> entries
-    ) {
-        List<DoctorScheduleDto> list = appointmentService.updateScheduleForCurrentDoctor(entries);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-
-    /**
-     * GET /api/doctors/{doctorId}/schedule
-     * Public: patient viewing a specific doctor's raw weekly schedule.
-     */
-    @GetMapping("/doctors/{doctorId}/schedule")
-    public ResponseEntity<ListResponse<DoctorScheduleDto>> getDoctorSchedule(@PathVariable Long doctorId) {
-        List<DoctorScheduleDto> list = appointmentService.getScheduleForDoctor(doctorId);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-
-    /**
-     * GET /api/doctors/{doctorId}/available-slots
-     * Public: patient viewing a specific doctor's available appointment slots
-     * in a given date-time range (computed from schedule + existing appointments).
-     *
-     * Returns a list of "start/end" ISO-8601 strings.
-     */
-    @GetMapping("/doctors/{doctorId}/available-slots")
-    public ResponseEntity<ListResponse<String>> getDoctorAvailableSlots(
-            @PathVariable Long doctorId,
-            @RequestParam(name = "from")
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(name = "to")
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
-    ) {
-        List<String> slots = appointmentService.getDoctorAvailableSlots(doctorId, from, to);
-        return ResponseEntity.ok(ListResponse.of(slots));
-    }
-
-    /**
-     * GET /api/doctors/{doctorId}/weekly-calendar
-     * Public weekly calendar for a doctor (patient-facing).
-     *
-     * weekStart: optional, if null -> current week (Monday as start).
-     */
-    @GetMapping("/doctors/{doctorId}/weekly-calendar")
-    public ResponseEntity<WeeklyCalendarResponse> getDoctorWeeklyCalendar(
-            @PathVariable Long doctorId,
-            @RequestParam(name = "weekStart", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
-    ) {
-        WeeklyCalendarResponse response = appointmentService.getWeeklyCalendarForDoctor(doctorId, weekStart);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * GET /api/doctors/me/weekly-calendar
-     * Weekly calendar for the currently authenticated doctor (shortcut).
-     */
-    @GetMapping("/doctors/me/weekly-calendar")
-    public ResponseEntity<WeeklyCalendarResponse> getMyWeeklyCalendar(
-            @RequestParam(name = "weekStart", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
-    ) {
-        WeeklyCalendarResponse response = appointmentService.getWeeklyCalendarForCurrentDoctor(weekStart);
-        return ResponseEntity.ok(response);
-    }
+    long deleteByExpiresAtBefore(LocalDateTime dateTime);
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/ActController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/PrescriptionRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-import tn.esprit.docsbackend.dto.doctor.ActDto;
-import tn.esprit.docsbackend.services.ActService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.Prescription;
 
 import java.util.List;
 
-/**
- * Endpoints related to acts/services.
- */
-@RestController
-@RequiredArgsConstructor
-public class ActController {
+public interface PrescriptionRepository extends JpaRepository<Prescription, Long> {
 
-    private final ActService actService;
+    List<Prescription> findByDoctorIdAndPatientIdAndDeletedFalseOrderByStartDateDesc(Long doctorId, Long patientId);
 
-    /**
-     * Returns the acts/services available for the currently authenticated doctor.
-     *
-     * GET /doctors/me/acts
-     */
-    @GetMapping("/doctors/me/acts")
-    public ResponseEntity<List<ActDto>> getMyActs() {
-        List<ActDto> acts = actService.getActsForCurrentDoctor();
-        return ResponseEntity.ok(acts);
-    }
+    List<Prescription> findByPatientIdAndDeletedFalseOrderByStartDateDesc(Long patientId);
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/AppointmentController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/AppointmentRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.appointment.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.services.AppointmentService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.Appointment;
+import tn.esprit.docsbackend.entities.enums.AppointmentStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
-public class AppointmentController {
+public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
-    private final AppointmentService appointmentService;
+    /**
+     * Legacy method: overlap for a given doctor and EXACT status.
+     * Kept for compatibility, but the service layer now prefers the method
+     * without status and applies blocking logic in memory.
+     *
+     * Overlap if: new.startAt < existing.endAt AND new.endAt > existing.startAt
+     */
+    List<Appointment> findByDoctorIdAndDeletedFalseAndStatusAndStartAtLessThanAndEndAtGreaterThan(
+            Long doctorId,
+            AppointmentStatus status,
+            LocalDateTime end,
+            LocalDateTime start
+    );
 
-    @PostMapping("/appointments")
-    public ResponseEntity<AppointmentDto> createAppointment(@RequestBody AppointmentCreateRequest request) {
-        AppointmentDto dto = appointmentService.createAppointmentAsCurrentPatient(request);
-        return ResponseEntity.ok(dto);
-    }
+    /**
+     * Overlap for a given doctor, regardless of status.
+     * Overlap if: new.startAt < existing.endAt AND new.endAt > existing.startAt
+     */
+    List<Appointment> findByDoctorIdAndDeletedFalseAndStartAtLessThanAndEndAtGreaterThan(
+            Long doctorId,
+            LocalDateTime end,
+            LocalDateTime start
+    );
 
-    @GetMapping("/appointments/me")
-    public ResponseEntity<ListResponse<AppointmentDto>> getMyAppointments(
-            @RequestParam(name = "from", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(name = "to", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
-    ) {
-        List<AppointmentDto> list = appointmentService.getAppointmentsForCurrentPatient(from, to);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
+    List<Appointment> findByDoctorIdAndDeletedFalseAndStartAtBetweenOrderByStartAtAsc(
+            Long doctorId,
+            LocalDateTime from,
+            LocalDateTime to
+    );
 
-    @GetMapping("/doctors/me/appointments")
-    public ResponseEntity<ListResponse<AppointmentDto>> getDoctorAppointments(
-            @RequestParam(name = "from", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(name = "to", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
-    ) {
-        List<AppointmentDto> list = appointmentService.getAppointmentsForCurrentDoctor(from, to);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
+    List<Appointment> findByPatientIdAndDeletedFalseAndStartAtBetweenOrderByStartAtAsc(
+            Long patientId,
+            LocalDateTime from,
+            LocalDateTime to
+    );
 
-    @DeleteMapping("/appointments/{id}")
-    public ResponseEntity<Void> cancelAppointment(@PathVariable("id") Long id) {
-        appointmentService.cancelAppointment(id);
-        return ResponseEntity.noContent().build();
-    }
+    List<Appointment> findByDoctorIdAndDeletedFalseOrderByStartAtAsc(Long doctorId);
 
-    // -------- NEW ENDPOINT: doctor updates appointment status --------
-    @PatchMapping("/appointments/{id}/status")
-    public ResponseEntity<AppointmentDto> updateAppointmentStatus(
-            @PathVariable("id") Long id,
-            @RequestBody AppointmentStatusUpdateRequest request
-    ) {
-        AppointmentDto dto = appointmentService.updateAppointmentStatus(id, request);
-        return ResponseEntity.ok(dto);
-    }
-
-    // -------- NEW ENDPOINT: reschedule appointment --------
-    @PutMapping("/appointments/{id}")
-    public ResponseEntity<AppointmentDto> rescheduleAppointment(
-            @PathVariable("id") Long id,
-            @RequestBody AppointmentCreateRequest request
-    ) {
-        AppointmentDto dto = appointmentService.rescheduleAppointment(id, request);
-        return ResponseEntity.ok(dto);
-    }
+    List<Appointment> findByPatientIdAndDeletedFalseOrderByStartAtAsc(Long patientId);
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/MedicationController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/ActRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.medication.MedicationDto;
-import tn.esprit.docsbackend.services.MedicationService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import tn.esprit.docsbackend.entities.Act;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/medications")
-@RequiredArgsConstructor
-public class MedicationController {
+@Repository
+public interface ActRepository extends JpaRepository<Act, Long> {
 
-    private final MedicationService medicationService;
+    /**
+     * Acts belonging to a specific doctor (used in /doctors/me/acts).
+     */
+    List<Act> findByDoctorIdAndDeletedFalse(Long doctorId);
 
-    @GetMapping
-    public ResponseEntity<ListResponse<MedicationDto>> getMedications(
-            @RequestParam(name = "q", required = false) String query
-    ) {
-        List<MedicationDto> list = medicationService.getMedications(query);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<MedicationDto> getMedication(@PathVariable Long id) {
-        MedicationDto dto = medicationService.getMedication(id);
-        return ResponseEntity.ok(dto);
-    }
+    /**
+     * Acts linked to a given specialty, regardless of doctor.
+     * Used by /specialties/{id}/acts.
+     */
+    List<Act> findBySpecialtyIdAndDeletedFalse(Long specialtyId);
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/AuthController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/DoctorProfileRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.auth.LoginRequest;
-import tn.esprit.docsbackend.dto.auth.RefreshTokenRequest;
-import tn.esprit.docsbackend.dto.auth.SignupRequest;
-import tn.esprit.docsbackend.dto.auth.TokenResponse;
-import tn.esprit.docsbackend.services.AuthService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.DoctorProfile;
 
-@RestController
-@RequestMapping("/auth")
-@RequiredArgsConstructor
-public class AuthController {
+import java.util.Optional;
 
-    private final AuthService authService;
+public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, Long> {
 
-    @PostMapping("/signup")
-    public ResponseEntity<TokenResponse> signup(@Valid @RequestBody SignupRequest request) {
-        TokenResponse response = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        TokenResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        TokenResponse response = authService.refresh(request);
-        return ResponseEntity.ok(response);
-    }
+    Optional<DoctorProfile> findByUserIdAndDeletedFalse(Long userId);
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/DoctorPrescriptionController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/PatientProfileRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.medication.PrescriptionCreateRequest;
-import tn.esprit.docsbackend.dto.medication.PrescriptionDto;
-import tn.esprit.docsbackend.services.PrescriptionService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.PatientProfile;
+
+import java.util.Optional;
+
+public interface PatientProfileRepository extends JpaRepository<PatientProfile, Long> {
+
+    Optional<PatientProfile> findByUserIdAndDeletedFalse(Long userId);
+}
+
+
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/IndicatorTypeRepository.java =====
+package tn.esprit.docsbackend.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.IndicatorType;
 
 import java.util.List;
+import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/doctors/me")
-@RequiredArgsConstructor
-public class DoctorPrescriptionController {
+public interface IndicatorTypeRepository extends JpaRepository<IndicatorType, Long> {
 
-    private final PrescriptionService prescriptionService;
+    Optional<IndicatorType> findByIdAndDeletedFalse(Long id);
 
-    /**
-     * POST /api/doctors/me/patients/{patientUserId}/prescriptions
-     */
-    @PostMapping("/patients/{patientUserId}/prescriptions")
-    public ResponseEntity<PrescriptionDto> createPrescriptionForPatient(
-            @PathVariable Long patientUserId,
-            @RequestBody PrescriptionCreateRequest request
-    ) {
-        PrescriptionDto dto = prescriptionService
-                .createPrescriptionForCurrentDoctorPatient(patientUserId, request);
-        return ResponseEntity.ok(dto);
-    }
+    Optional<IndicatorType> findByCodeAndDeletedFalse(String code);
 
-    /**
-     * GET /api/doctors/me/patients/{patientUserId}/prescriptions?activeOnly=true
-     */
-    @GetMapping("/patients/{patientUserId}/prescriptions")
-    public ResponseEntity<ListResponse<PrescriptionDto>> getPrescriptionsForPatient(
-            @PathVariable Long patientUserId,
-            @RequestParam(name = "activeOnly", required = false) Boolean activeOnly
-    ) {
-        List<PrescriptionDto> list = prescriptionService
-                .getPrescriptionsForCurrentDoctorPatient(patientUserId, activeOnly);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-
-    /**
-     * GET /api/doctors/me/prescriptions/{prescriptionId}
-     */
-    @GetMapping("/prescriptions/{prescriptionId}")
-    public ResponseEntity<PrescriptionDto> getPrescription(
-            @PathVariable Long prescriptionId
-    ) {
-        PrescriptionDto dto = prescriptionService.getPrescriptionForCurrentDoctor(prescriptionId);
-        return ResponseEntity.ok(dto);
-    }
-
-    /**
-     * DELETE /api/doctors/me/prescriptions/{prescriptionId}
-     */
-    @DeleteMapping("/prescriptions/{prescriptionId}")
-    public ResponseEntity<Void> deletePrescription(
-            @PathVariable Long prescriptionId
-    ) {
-        prescriptionService.deletePrescriptionForCurrentDoctor(prescriptionId);
-        return ResponseEntity.noContent().build();
-    }
+    List<IndicatorType> findAllByActiveTrueAndDeletedFalse();
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/PatientPrescriptionController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/UserRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.medication.PrescriptionDto;
-import tn.esprit.docsbackend.dto.medication.PrescriptionLineDto;
-import tn.esprit.docsbackend.dto.medication.PrescriptionLineReminderUpdateRequest;
-import tn.esprit.docsbackend.services.PrescriptionService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.User;
 
-import java.util.List;
+import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/prescriptions/me")
-@RequiredArgsConstructor
-public class PatientPrescriptionController {
+public interface UserRepository extends JpaRepository<User, Long> {
 
-    private final PrescriptionService prescriptionService;
+    Optional<User> findByEmailAndDeletedFalse(String email);
 
-    /**
-     * GET /api/prescriptions/me?activeOnly=true
-     */
-    @GetMapping
-    public ResponseEntity<ListResponse<PrescriptionDto>> getMyPrescriptions(
-            @RequestParam(name = "activeOnly", required = false) Boolean activeOnly
-    ) {
-        List<PrescriptionDto> list = prescriptionService
-                .getPrescriptionsForCurrentPatient(activeOnly);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-
-    /**
-     * GET /api/prescriptions/me/{prescriptionId}
-     */
-    @GetMapping("/{prescriptionId}")
-    public ResponseEntity<PrescriptionDto> getMyPrescription(
-            @PathVariable Long prescriptionId
-    ) {
-        PrescriptionDto dto = prescriptionService.getPrescriptionForCurrentPatient(prescriptionId);
-        return ResponseEntity.ok(dto);
-    }
-
-    /**
-     * GET /api/prescriptions/me/lines/active
-     */
-    @GetMapping("/lines/active")
-    public ResponseEntity<ListResponse<PrescriptionLineDto>> getMyActiveLines() {
-        List<PrescriptionLineDto> list = prescriptionService.getActiveLinesForCurrentPatient();
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-
-    /**
-     * PATCH /api/prescriptions/me/lines/{lineId}/reminder
-     */
-    @PatchMapping("/lines/{lineId}/reminder")
-    public ResponseEntity<PrescriptionLineDto> updateLineReminder(
-            @PathVariable Long lineId,
-            @RequestBody PrescriptionLineReminderUpdateRequest request
-    ) {
-        PrescriptionLineDto dto = prescriptionService
-                .updateReminderForCurrentPatientLine(lineId, request.getReminderEnabled());
-        return ResponseEntity.ok(dto);
-    }
+    boolean existsByEmailAndDeletedFalse(String email);
 }
 
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/DoctorController.java =====
-package tn.esprit.docsbackend.controllers;
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/SpecialtyRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.doctor.*;
-import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
-import tn.esprit.docsbackend.services.DoctorService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import tn.esprit.docsbackend.entities.Specialty;
 
-import java.util.List;
+import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/doctors")
-@RequiredArgsConstructor
-public class DoctorController {
-
-    private final DoctorService doctorService;
+@Repository
+public interface SpecialtyRepository extends JpaRepository<Specialty, Long> {
 
     /**
-     * GET /api/doctors/me
-     * Current doctor's own profile.
+     * Used by seeder to avoid duplicates by name.
      */
-    @GetMapping("/me")
-    public ResponseEntity<DoctorProfileDto> getMyProfile() {
-        return ResponseEntity.ok(doctorService.getCurrentDoctorProfile());
-    }
+    boolean existsByNameIgnoreCaseAndDeletedFalse(String name);
 
     /**
-     * PUT /api/doctors/me
-     * Partial update of current doctor's profile.
+     * Used when validating specialtyId for /specialties/{id}/acts.
      */
-    @PutMapping("/me")
-    public ResponseEntity<DoctorProfileDto> updateMyProfile(
-            @RequestBody DoctorProfileUpdateRequest request
-    ) {
-        return ResponseEntity.ok(doctorService.updateCurrentDoctorProfile(request));
-    }
-
-    /**
-     * GET /api/doctors/me/patients
-     * All patients linked to current doctor.
-     */
-    @GetMapping("/me/patients")
-    public ResponseEntity<ListResponse<PatientProfileDto>> getMyPatients() {
-        List<PatientProfileDto> patients = doctorService.getPatientsOfCurrentDoctor();
-        return ResponseEntity.ok(ListResponse.of(patients));
-    }
-
-    /**
-     * GET /api/doctors/me/patients/{patientUserId}
-     * Details of ONE patient (by User.id) linked to current doctor.
-     */
-    @GetMapping("/me/patients/{patientUserId}")
-    public ResponseEntity<PatientProfileDto> getMyPatientByUserId(
-            @PathVariable Long patientUserId
-    ) {
-        PatientProfileDto dto = doctorService.getPatientOfCurrentDoctor(patientUserId);
-        return ResponseEntity.ok(dto);
-    }
-
-    /**
-     * POST /api/doctors/me/patients/{patientUserId}
-     * Link a patient (by User.id) to current doctor.
-     */
-    @PostMapping("/me/patients/{patientUserId}")
-    public ResponseEntity<Void> addPatientToMe(
-            @PathVariable Long patientUserId
-    ) {
-        doctorService.addPatientToCurrentDoctor(patientUserId);
-        return ResponseEntity.ok().build();
-    }
-
-    /**
-     * DELETE /api/doctors/me/patients/{patientUserId}
-     * Remove link between current doctor and a patient.
-     */
-    @DeleteMapping("/me/patients/{patientUserId}")
-    public ResponseEntity<Void> removePatientFromMe(
-            @PathVariable Long patientUserId
-    ) {
-        doctorService.removePatientFromCurrentDoctor(patientUserId);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * POST /api/doctors/me/practice-setup
-     * Simple onboarding: select one specialty + a set of acts.
-     */
-    @PostMapping("/me/practice-setup")
-    public ResponseEntity<DoctorProfileDto> setupPracticeForMe(
-            @RequestBody DoctorPracticeSetupRequest request
-    ) {
-        DoctorProfileDto dto = doctorService.setupPracticeForCurrentDoctor(
-                request.getSpecialtyId(),
-                request.getActIds()
-        );
-        return ResponseEntity.ok(dto);
-    }
-
-    /**
-     * GET /api/doctors/search
-     * Public search of doctors.
-     */
-    @GetMapping("/search")
-    public ResponseEntity<ListResponse<DoctorSearchResultDto>> searchDoctors(
-            @RequestParam(name = "q", required = false) String query,
-            @RequestParam(name = "specialtyId", required = false) Long specialtyId,
-            @RequestParam(name = "city", required = false) String city,
-            @RequestParam(name = "country", required = false) String country,
-            @RequestParam(name = "teleconsultationEnabled", required = false) Boolean teleconsultationEnabled,
-            @RequestParam(name = "acceptingNewPatients", required = false) Boolean acceptingNewPatients
-    ) {
-        List<DoctorSearchResultDto> results = doctorService.searchDoctors(
-                query,
-                specialtyId,
-                city,
-                country,
-                teleconsultationEnabled,
-                acceptingNewPatients
-        );
-        return ResponseEntity.ok(ListResponse.of(results));
-    }
-
-    /**
-     * GET /api/doctors/{doctorId}/public
-     * Public profile for a doctor.
-     */
-    @GetMapping("/{doctorId}/public")
-    public ResponseEntity<DoctorPublicProfileDto> getDoctorPublicProfile(
-            @PathVariable Long doctorId
-    ) {
-        DoctorPublicProfileDto dto = doctorService.getDoctorPublicProfile(doctorId);
-        return ResponseEntity.ok(dto);
-    }
-
-
-    @GetMapping("/me/home-stats")
-    public ResponseEntity<DoctorHomeStatsDto> getMyHomeStats() {
-        return ResponseEntity.ok(doctorService.getHomeStatsForCurrentDoctor());
-    }
-
+    Optional<Specialty> findByIdAndDeletedFalse(Long id);
 }
 
 
+===== FILE: ./src/main/java/tn/esprit/docsbackend/repositories/PatientIndicatorRepository.java =====
+package tn.esprit.docsbackend.repositories;
 
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/PatientController.java =====
-package tn.esprit.docsbackend.controllers;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.doctor.DoctorProfileDto;
-import tn.esprit.docsbackend.dto.patient.PatientProfileDto;
-import tn.esprit.docsbackend.dto.patient.PatientProfileUpdateRequest;
-import tn.esprit.docsbackend.services.PatientService;
-
-import java.util.List;
-
-/**
- * Endpoints for operations related to patients themselves.
- */
-@RestController
-@RequiredArgsConstructor
-public class PatientController {
-
-    private final PatientService patientService;
-
-    /**
-     * Returns the profile of the currently authenticated patient.
-     *
-     * GET /patients/me
-     */
-    @GetMapping("/patients/me")
-    public ResponseEntity<PatientProfileDto> getMyProfile() {
-        PatientProfileDto dto = patientService.getCurrentPatientProfile();
-        return ResponseEntity.ok(dto);
-    }
-
-    /**
-     * Partially update the profile of the currently authenticated patient.
-     *
-     * PUT /patients/me
-     */
-    @PutMapping("/patients/me")
-    public ResponseEntity<PatientProfileDto> updateMyProfile(
-            @Valid @RequestBody PatientProfileUpdateRequest request
-    ) {
-        PatientProfileDto updated = patientService.updateCurrentPatientProfile(request);
-        return ResponseEntity.ok(updated);
-    }
-
-    /**
-     * Returns the list of doctors linked to the currently authenticated patient.
-     *
-     * GET /patients/me/doctors
-     */
-    @GetMapping("/patients/me/doctors")
-    public ResponseEntity<List<DoctorProfileDto>> getMyDoctors() {
-        List<DoctorProfileDto> doctors = patientService.getDoctorsOfCurrentPatient();
-        return ResponseEntity.ok(doctors);
-    }
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/UserImageController.java =====
-package tn.esprit.docsbackend.controllers;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import tn.esprit.docsbackend.dto.user.UserDto;
-import tn.esprit.docsbackend.services.UserImageService;
-
-/**
- * Endpoints related specifically to user profile images.
- */
-@RestController
-@RequiredArgsConstructor
-public class UserImageController {
-
-    private final UserImageService userImageService;
-
-    /**
-     * Upload or replace the current user's profile image.
-     *
-     * Endpoint:
-     *   POST /users/me/profile-image
-     *
-     * Request:
-     *   multipart/form-data with field "image"
-     *
-     * Response:
-     *   UserDto (with updated profileImage URL)
-     */
-    @PostMapping("/users/me/profile-image")
-    public ResponseEntity<UserDto> uploadMyProfileImage(
-            @RequestParam("image") MultipartFile image
-    ) {
-        UserDto updatedUser = userImageService.uploadCurrentUserProfileImage(image);
-        return ResponseEntity.ok(updatedUser);
-    }
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/IndicatorController.java =====
-package tn.esprit.docsbackend.controllers;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.indicator.IndicatorTypeDto;
-import tn.esprit.docsbackend.dto.indicator.PatientIndicatorCreateRequest;
-import tn.esprit.docsbackend.dto.indicator.PatientIndicatorDto;
-import tn.esprit.docsbackend.services.PatientIndicatorService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import tn.esprit.docsbackend.entities.PatientIndicator;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RestController
-@RequestMapping
-@RequiredArgsConstructor
-public class IndicatorController {
-
-    private final PatientIndicatorService patientIndicatorService;
+public interface PatientIndicatorRepository extends JpaRepository<PatientIndicator, Long> {
 
     /**
-     * Static catalog of available indicator types.
-     * GET /indicator-types
+     * Measurements for one patient, optionally filtered by type and date range.
      */
-    @GetMapping("/indicator-types")
-    public ResponseEntity<ListResponse<IndicatorTypeDto>> getIndicatorTypes() {
-        List<IndicatorTypeDto> types = patientIndicatorService.getAllIndicatorTypes();
-        return ResponseEntity.ok(ListResponse.of(types));
-    }
+    List<PatientIndicator> findByPatientProfileIdAndDeletedFalseOrderByMeasuredAtDesc(Long patientProfileId);
 
-    /**
-     * Current patient adds a new indicator measurement.
-     * POST /indicators/me
-     */
-    @PostMapping("/indicators/me")
-    public ResponseEntity<PatientIndicatorDto> addIndicatorForMe(
-            @RequestBody PatientIndicatorCreateRequest request
-    ) {
-        PatientIndicatorDto dto = patientIndicatorService.addIndicatorForCurrentPatient(request);
-        return ResponseEntity.ok(dto);
-    }
+    List<PatientIndicator> findByPatientProfileIdAndIndicatorTypeIdAndDeletedFalseOrderByMeasuredAtDesc(
+            Long patientProfileId,
+            Long indicatorTypeId
+    );
 
-    /**
-     * Current patient lists their own indicators.
-     * Optional query params: indicatorTypeId, from, to
-     * GET /indicators/me
-     */
-    @GetMapping("/indicators/me")
-    public ResponseEntity<ListResponse<PatientIndicatorDto>> getIndicatorsForMe(
-            @RequestParam(name = "indicatorTypeId", required = false) Long indicatorTypeId,
-            @RequestParam(name = "from", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(name = "to", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
-    ) {
-        List<PatientIndicatorDto> list =
-                patientIndicatorService.getIndicatorsForCurrentPatient(indicatorTypeId, from, to);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
+    List<PatientIndicator> findByPatientProfileIdAndDeletedFalseAndMeasuredAtBetweenOrderByMeasuredAtDesc(
+            Long patientProfileId,
+            LocalDateTime from,
+            LocalDateTime to
+    );
 
-    /**
-     * Delete one of *my* indicators (soft delete).
-     *
-     * DELETE /indicators/me/{id}
-     *
-     * - Only works for the currently authenticated PATIENT.
-     * - Should return 204 NO_CONTENT on success.
-     * - Service is responsible for:
-     *      - checking ownership
-     *      - checking not already deleted
-     *      - throwing 404 / 403 when appropriate.
-     */
-    @DeleteMapping("/indicators/me/{id}")
-    public ResponseEntity<Void> deleteIndicatorForMe(@PathVariable("id") Long id) {
-        patientIndicatorService.deleteIndicatorForCurrentPatient(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Doctor lists indicators of a given patient (by patient User.id).
-     * Requires current user to be DOCTOR and linked to that patient.
-     *
-     * GET /indicators/patient/{patientUserId}
-     */
-    @GetMapping("/indicators/patient/{patientUserId}")
-    public ResponseEntity<ListResponse<PatientIndicatorDto>> getIndicatorsForPatientAsDoctor(
-            @PathVariable Long patientUserId,
-            @RequestParam(name = "indicatorTypeId", required = false) Long indicatorTypeId,
-            @RequestParam(name = "from", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(name = "to", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
-    ) {
-        List<PatientIndicatorDto> list =
-                patientIndicatorService.getIndicatorsForPatientAsDoctor(patientUserId, indicatorTypeId, from, to);
-        return ResponseEntity.ok(ListResponse.of(list));
-    }
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/UserController.java =====
-package tn.esprit.docsbackend.controllers;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import tn.esprit.docsbackend.dto.common.ListResponse;
-import tn.esprit.docsbackend.dto.user.ChangePasswordRequest;
-import tn.esprit.docsbackend.dto.user.UserDto;
-import tn.esprit.docsbackend.dto.user.UserUpdateRequest;
-import tn.esprit.docsbackend.services.UserService;
-
-/**
- * Endpoints related to the base User entity (common to doctors & patients).
- *
- * NOTE:
- * - Doctor-specific fields: use DoctorController / DoctorProfile endpoints.
- * - Patient-specific fields: use PatientController / PatientProfile endpoints.
- */
-@RestController
-@RequestMapping()
-@RequiredArgsConstructor
-public class UserController {
-
-    private final UserService userService;
-
-    /**
-     * Get info about the currently authenticated user.
-     */
-    @GetMapping("/me")
-    public UserDto getCurrentUser() {
-        return userService.getCurrentUser();
-    }
-
-    /**
-     * Partially update base user fields (firstname, lastname, phone, email) for the current user.
-     */
-    @PutMapping("/me")
-    public UserDto updateCurrentUser(@Valid @RequestBody UserUpdateRequest request) {
-        return userService.updateCurrentUser(request);
-    }
-
-    /**
-     * Change password for the current user.
-     */
-    @PostMapping("/change-password")
-    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(request);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
-
-    // If you already had other endpoints in this controller (admin list users, get by id, etc.),
-    // just merge them back into this class. The important part here is the /me and /change-password endpoints.
-}
-
-
-===== FILE: ./src/main/java/tn/esprit/docsbackend/controllers/SpecialtyController.java =====
-package tn.esprit.docsbackend.controllers;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import tn.esprit.docsbackend.dto.doctor.ActDto;
-import tn.esprit.docsbackend.dto.doctor.SpecialtyDto;
-import tn.esprit.docsbackend.services.ActService;
-import tn.esprit.docsbackend.services.SpecialtyService;
-
-import java.util.List;
-
-@RestController
-@RequestMapping("/api/specialties")
-@RequiredArgsConstructor
-public class SpecialtyController {
-
-    private final SpecialtyService specialtyService;
-    private final ActService actService;
-
-    @GetMapping
-    public List<SpecialtyDto> getAllSpecialties() {
-        return specialtyService.getAllSpecialties();
-    }
-
-    /**
-     * Returns acts for the current doctor filtered by the given specialty.
-     * Used in onboarding: after doctor selects specialty, we show available acts.
-     */
-    @GetMapping("/{specialtyId}/acts")
-    public List<ActDto> getActsForSpecialtyForCurrentDoctor(@PathVariable Long specialtyId) {
-        return actService.getActsBySpecialtyId(specialtyId);
-    }
+    List<PatientIndicator> findByPatientProfileIdAndIndicatorTypeIdAndDeletedFalseAndMeasuredAtBetweenOrderByMeasuredAtDesc(
+            Long patientProfileId,
+            Long indicatorTypeId,
+            LocalDateTime from,
+            LocalDateTime to
+    );
 }
 
 

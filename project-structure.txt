@@ -33,7 +33,11 @@
 ./src/main/java/tn/esprit/docsbackend/dto/appointment
 ./src/main/java/tn/esprit/docsbackend/dto/appointment/AppointmentDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/appointment/DoctorScheduleDto.java
+./src/main/java/tn/esprit/docsbackend/dto/appointment/AppointmentStatusUpdateRequest.java
+./src/main/java/tn/esprit/docsbackend/dto/appointment/WeeklyCalendarResponse.java
 ./src/main/java/tn/esprit/docsbackend/dto/appointment/AppointmentCreateRequest.java
+./src/main/java/tn/esprit/docsbackend/dto/appointment/DailyScheduleDto.java
+./src/main/java/tn/esprit/docsbackend/dto/appointment/SlotDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/indicator
 ./src/main/java/tn/esprit/docsbackend/dto/indicator/IndicatorTypeDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/indicator/PatientIndicatorCreateRequest.java
@@ -49,6 +53,7 @@
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPracticeSetupRequest.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorPublicProfileDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileUpdateRequest.java
+./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorHomeStatsDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorProfileDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/doctor/DoctorSearchResultDto.java
 ./src/main/java/tn/esprit/docsbackend/dto/user
